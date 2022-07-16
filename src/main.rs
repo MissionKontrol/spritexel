@@ -27,6 +27,11 @@ fn main() {
     .run();
 }
 
+pub struct WinSize {
+	pub w: f32,
+	pub h: f32,
+}
+
 pub struct GameSetup;
 
 impl Plugin for GameSetup {
@@ -40,13 +45,18 @@ impl Plugin for GameSetup {
         .add_system(asset_setup_system)
         .add_system(actor_keyboard_event_system)
         .add_system(actor_move_system)
-        .add_system(player_laser_spawn_system);
+        .add_system(player_laser_spawn_system)
+        .add_system(laser_move_system);
     }
 }
 
-fn game_setup_system(mut commands: Commands) {
+fn game_setup_system(mut commands: Commands, windows: Res<Windows>) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
+    let window = windows.get_primary().unwrap();
+    let (win_width, win_height) = (window.width(), window.height());
+    let win_size = WinSize{ w: win_width, h: win_height };
+    commands.insert_resource(win_size);
 }
 
 #[derive(Component)]
@@ -170,9 +180,9 @@ pub struct Laser;
 fn player_laser_spawn_system(mut commands: Commands, asset_server: Res<AssetServer>, kb: Res<Input<KeyCode>>,
     query: Query<(&Transform), With<Actor>>) {
     const LASER_SPRITE: &str = "laserGreenHorizontal.png";
-    const LASER_SPRITE_SIZE: (f32,f32) = (70.0,70.0);
+    // const LASER_SPRITE_SIZE: (f32,f32) = (70.0,70.0);
     const LASER_SCALE: f32 = 1.0;
-    const LASER_SPRITE_OFFSET: f32 = LASER_SPRITE_SIZE.0 / 2.0;
+    // const LASER_SPRITE_OFFSET: f32 = LASER_SPRITE_SIZE.0 / 2.0;
 
     if let Ok(player_tf) = query.get_single() {
         if kb.just_pressed(KeyCode::Space) {
@@ -192,3 +202,18 @@ fn player_laser_spawn_system(mut commands: Commands, asset_server: Res<AssetServ
         }
     }
 }
+
+fn laser_move_system(mut commands: Commands, mut query: Query<(Entity, &Velocity, &mut Transform), With<Laser>>, win_size: Res<WinSize>) {
+    for (entity, velocity, mut transform) in query.iter_mut() {
+        let translation = &mut transform.translation;
+        translation.x += velocity.x * 10.0;
+
+        if translation.x >= win_size.w / 2.0 {
+            commands.entity(entity).despawn();
+        }
+    }
+
+
+
+}
+
