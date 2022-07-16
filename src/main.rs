@@ -1,6 +1,6 @@
 mod components;
 use components::*;
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::collide_aabb::collide};
 
 const SCREEN_WIDTH: f32 = 1000.0;
 const SCREEN_HEIGHT: f32 = 1000.0;
@@ -8,7 +8,7 @@ const SCREEN_HEIGHT_OFFSET: f32 = SCREEN_HEIGHT / 2.0;
 const SCREEN_WIDTH_OFFSET: f32 = SCREEN_WIDTH / 2.0;
 
 const BLOCK_SPRITE_SIZE: (f32,f32) = (70.0,70.0);
-const _BLOCK_SMALL_SPRITE_SIZE: (f32,f32) = (10.0,10.0);
+const BLOCK_SMALL_SPRITE_SIZE: (f32,f32) = (10.0,10.0);
 
 const ACTOR_SPRITE_SIZE: (f32,f32) = (70.0,70.0);
 
@@ -46,7 +46,8 @@ impl Plugin for GameSetup {
         .add_system(actor_keyboard_event_system)
         .add_system(actor_move_system)
         .add_system(player_laser_spawn_system)
-        .add_system(laser_move_system);
+        .add_system(laser_move_system)
+        .add_system(laser_hit_system);
     }
 }
 
@@ -100,6 +101,7 @@ fn block_setup_system(mut commands: Commands, asset_server: Res<AssetServer>){
             },
             ..Default::default()
             })
+            .insert(SpriteSize::from(BLOCK_SPRITE_SIZE))
             .insert(Block);
 }
 
@@ -121,6 +123,7 @@ fn block_small_setup_system(mut commands: Commands, asset_server: Res<AssetServe
             },
             ..Default::default()
             })
+            .insert(SpriteSize::from(BLOCK_SMALL_SPRITE_SIZE))
             .insert(Block);
 }
 
@@ -182,10 +185,19 @@ fn actor_keyboard_event_system(
 #[derive(Component)]
 pub struct Laser;
 
+#[derive(Component)]
+pub struct SpriteSize(pub Vec2);
+
+impl From<(f32, f32)> for SpriteSize {
+	fn from(val: (f32, f32)) -> Self {
+		SpriteSize(Vec2::new(val.0, val.1))
+	}
+}
+
 fn player_laser_spawn_system(mut commands: Commands, asset_server: Res<AssetServer>, kb: Res<Input<KeyCode>>,
     query: Query<(&Transform), With<Actor>>) {
     const LASER_SPRITE: &str = "laserGreenHorizontal.png";
-    // const LASER_SPRITE_SIZE: (f32,f32) = (70.0,70.0);
+    const LASER_SPRITE_SIZE: (f32,f32) = (70.0,70.0);
     const LASER_SCALE: f32 = 1.0;
     // const LASER_SPRITE_OFFSET: f32 = LASER_SPRITE_SIZE.0 / 2.0;
 
@@ -203,6 +215,7 @@ fn player_laser_spawn_system(mut commands: Commands, asset_server: Res<AssetServ
                 ..Default::default()
             })
             .insert(Velocity{x: 5.0, y: 0.0})
+            .insert(SpriteSize::from(LASER_SPRITE_SIZE))
             .insert(Laser);
         }
     }
@@ -223,8 +236,25 @@ fn laser_move_system(mut commands: Commands, mut query: Query<(Entity, &Velocity
 }
 
 fn laser_hit_system(mut commands: Commands, 
-    mut laser_query: Query<&mut Transform, With<Laser>>,
-    mut block_query: Query<&mut Velocity, With<Block>>,
+    mut laser_query: Query<(Entity, &Transform, &SpriteSize), With<Laser>>,
+    mut block_query: Query<(Entity, &Transform, &SpriteSize), With<Block>>,
 ){
+    for (laser_entity, laser_transform, laser_sprite_size ) in laser_query.iter_mut(){
+        for (block_entity, block_transform, block_sprite_size ) in block_query.iter() {
+            let collision = collide(laser_transform.translation, laser_sprite_size.0
+                ,block_transform.translation , block_sprite_size.0);
 
+                    // perform collision
+			if let Some(_) = collision {
+				// remove the enemy
+				commands.entity(block_entity).despawn();
+
+				// remove the laser
+				commands.entity(laser_entity).despawn();
+
+				// spawn the explosionToSpawn
+				// commands.spawn().insert(ExplosionToSpawn(enemy_tf.translation.clone()));
+			}
+        }
+    }
 }
