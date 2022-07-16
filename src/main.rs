@@ -79,6 +79,9 @@ fn asset_setup_system(mut commands: Commands, asset_server: Res<AssetServer>, mu
 
 }
 
+#[derive(Component)]
+pub struct Block;
+
 fn block_setup_system(mut commands: Commands, asset_server: Res<AssetServer>){
     const BLOCK_SPRITE: &str = "metalCenter.png";
     const BLOCK_SCALE: f32 = 1.0;
@@ -96,7 +99,8 @@ fn block_setup_system(mut commands: Commands, asset_server: Res<AssetServer>){
                 ..Default::default()
             },
             ..Default::default()
-            });
+            })
+            .insert(Block);
 }
 
 fn block_small_setup_system(mut commands: Commands, asset_server: Res<AssetServer>){
@@ -116,7 +120,8 @@ fn block_small_setup_system(mut commands: Commands, asset_server: Res<AssetServe
                 ..Default::default()
             },
             ..Default::default()
-            });
+            })
+            .insert(Block);
 }
 
 #[derive(Component)]
@@ -217,3 +222,9 @@ fn laser_move_system(mut commands: Commands, mut query: Query<(Entity, &Velocity
 
 }
 
+fn laser_hit_system(mut commands: Commands, 
+    mut laser_query: Query<&mut Transform, With<Laser>>,
+    mut block_query: Query<&mut Velocity, With<Block>>,
+){
+
+}
