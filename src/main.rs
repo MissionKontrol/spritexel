@@ -8,9 +8,25 @@ const SCREEN_HEIGHT_OFFSET: f32 = SCREEN_HEIGHT / 2.0;
 const SCREEN_WIDTH_OFFSET: f32 = SCREEN_WIDTH / 2.0;
 
 const BLOCK_SPRITE_SIZE: (f32, f32) = (70.0, 70.0);
-const BLOCK_SMALL_SPRITE_SIZE: (f32, f32) = (10.0, 10.0);
+const BLOCK_MEDIUM_SPRITE_SIZE: (f32, f32) = (10.0, 10.0);
+
+const BLOCK_SPRITE: &str = "metalCenter.png";
+const _BLOCK_SCALE: f32 = 1.0;
+const BLOCK_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
+
+const BLOCK_MEDIUM_SPRITE: &str = "metalSmallCenterSticker.png";
+const BLOCK_MEDIUM_SCALE: f32 = 1.0;
+const BLOCK_MEDIUM_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
 
 const ACTOR_SPRITE_SIZE: (f32, f32) = (70.0, 70.0);
+const ACTOR_SPRITE: &str = "laserUp.png";
+const ACTOR_SCALE: f32 = 1.0;
+const ACTOR_SPRITE_OFFSET: f32 = ACTOR_SPRITE_SIZE.0 / 2.0;
+
+const LASER_SPRITE: &str = "laserGreenHorizontal.png";
+const LASER_SPRITE_SIZE: (f32, f32) = (70.0, 70.0);
+const LASER_SCALE: f32 = 1.0;
+// const LASER_SPRITE_OFFSET: f32 = LASER_SPRITE_SIZE.0 / 2.0;
 
 const EXPLOSION_LENGTH: usize = 6;
 
@@ -40,7 +56,7 @@ impl Plugin for GameSetup {
         app.add_startup_system(asset_setup_system)
             .add_startup_system(actor_setup_system)
             .add_startup_system(block_setup_system)
-            .add_startup_system(block_small_setup_system)
+            .add_startup_system(block_medium_setup_system)
             .add_startup_system(game_setup_system)
             .add_system(actor_keyboard_event_system)
             .add_system(actor_move_system)
@@ -68,6 +84,10 @@ fn game_setup_system(mut commands: Commands, windows: Res<Windows>) {
 pub struct GameAssets {
     pub actor_animation_sprite: Handle<TextureAtlas>,
     pub explosion_animation_sprite: Handle<TextureAtlas>,
+    pub actor: Handle<Image>,
+    pub block_large: Handle<Image>,
+    pub block_medium: Handle<Image>,
+    pub laser: Handle<Image>,
 }
 
 fn asset_setup_system(
@@ -103,6 +123,10 @@ fn asset_setup_system(
     let explosion_atlas_handle = atlas_server.add(texture_atlas);
 
     commands.insert_resource(GameAssets {
+		actor: asset_server.load(ACTOR_SPRITE),
+		block_large: asset_server.load(BLOCK_SPRITE),
+		block_medium: asset_server.load(BLOCK_MEDIUM_SPRITE),
+		laser: asset_server.load(LASER_SPRITE),
         actor_animation_sprite: texture_atlas_handle,
         explosion_animation_sprite: explosion_atlas_handle,
     });
@@ -111,11 +135,14 @@ fn asset_setup_system(
 #[derive(Component)]
 pub struct Block;
 
-fn block_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
-    const BLOCK_SPRITE: &str = "metalCenter.png";
-    const BLOCK_SCALE: f32 = 1.0;
-    const BLOCK_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
+#[derive(Component)]
+pub enum BlockSize{
+    Small(u8),
+    Medimum(u8),
+    Large(u8),
+}
 
+fn block_setup_system(mut commands: Commands, game_textures: Res<GameAssets>) {
     let (x, y) = (
         SCREEN_WIDTH_OFFSET - BLOCK_SPRITE_OFFSET,
         -SCREEN_HEIGHT_OFFSET + BLOCK_SPRITE_OFFSET,
@@ -124,41 +151,39 @@ fn block_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .spawn_bundle(SpriteBundle {
-            texture: asset_server.load(BLOCK_SPRITE),
+            texture: game_textures.block_large.clone(),
             transform: Transform {
-                scale: Vec3::new(1.4285, 1.4285, 1.),
+                scale: Vec3::new(1.4285, 1.4285, 1.),   // 10/7 - scale to 100px
                 translation: Vec3::new(x, y, 2.0),
                 ..Default::default()
             },
             ..Default::default()
         })
         .insert(SpriteSize::from(BLOCK_SPRITE_SIZE))
-        .insert(Block);
+        .insert(Block)
+        .insert(BlockSize::Large(100));
 }
 
-fn block_small_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
-    const BLOCK_SMALL_SPRITE: &str = "metalSmallCenterSticker.png";
-    const BLOCK_SMALL_SCALE: f32 = 1.0;
-    const BLOCK_SMALL_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
-
+fn block_medium_setup_system(mut commands: Commands, game_textures: Res<GameAssets>) {
     let (mut x, mut y) = (
-        SCREEN_WIDTH_OFFSET - BLOCK_SMALL_SPRITE_OFFSET,
-        -SCREEN_HEIGHT_OFFSET + BLOCK_SMALL_SPRITE_OFFSET,
+        SCREEN_WIDTH_OFFSET - BLOCK_MEDIUM_SPRITE_OFFSET,
+        -SCREEN_HEIGHT_OFFSET + BLOCK_MEDIUM_SPRITE_OFFSET,
     );
     (x, y) = (x, y + 55.0);
 
     commands
         .spawn_bundle(SpriteBundle {
-            texture: asset_server.load(BLOCK_SMALL_SPRITE),
+            texture: game_textures.block_medium.clone(),
             transform: Transform {
-                scale: Vec3::new(BLOCK_SMALL_SCALE, BLOCK_SMALL_SCALE, 1.),
+                scale: Vec3::new(BLOCK_MEDIUM_SCALE, BLOCK_MEDIUM_SCALE, 1.),
                 translation: Vec3::new(x, y, 2.0),
                 ..Default::default()
             },
             ..Default::default()
         })
-        .insert(SpriteSize::from(BLOCK_SMALL_SPRITE_SIZE))
-        .insert(Block);
+        .insert(SpriteSize::from(BLOCK_MEDIUM_SPRITE_SIZE))
+        .insert(Block)
+        .insert(BlockSize::Medimum(10));
 }
 
 #[derive(Component)]
@@ -178,11 +203,7 @@ fn actor_move_system(mut query: Query<(&Velocity, &mut Transform), With<Actor>>)
     }
 }
 
-fn actor_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
-    const ACTOR_SPRITE: &str = "laserUp.png";
-    const ACTOR_SCALE: f32 = 1.0;
-    const ACTOR_SPRITE_OFFSET: f32 = ACTOR_SPRITE_SIZE.0 / 2.0;
-
+fn actor_setup_system(mut commands: Commands, game_textures: Res<GameAssets>) {
     let (x, y) = (
         -SCREEN_WIDTH_OFFSET + ACTOR_SPRITE_OFFSET,
         -SCREEN_HEIGHT_OFFSET + ACTOR_SPRITE_OFFSET,
@@ -191,7 +212,7 @@ fn actor_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .spawn_bundle(SpriteBundle {
-            texture: asset_server.load(ACTOR_SPRITE),
+            texture: game_textures.actor.clone(),
             transform: Transform {
                 scale: Vec3::new(ACTOR_SCALE, ACTOR_SCALE, 1.),
                 translation: Vec3::new(x, y, 2.0),
@@ -237,11 +258,6 @@ fn player_laser_spawn_system(
     kb: Res<Input<KeyCode>>,
     query: Query<(&Transform), With<Actor>>,
 ) {
-    const LASER_SPRITE: &str = "laserGreenHorizontal.png";
-    const LASER_SPRITE_SIZE: (f32, f32) = (70.0, 70.0);
-    const LASER_SCALE: f32 = 1.0;
-    // const LASER_SPRITE_OFFSET: f32 = LASER_SPRITE_SIZE.0 / 2.0;
-
     if let Ok(player_tf) = query.get_single() {
         if kb.just_pressed(KeyCode::Space) {
             let (x, y) = (player_tf.translation.x, player_tf.translation.y);
@@ -294,7 +310,7 @@ fn laser_hit_system(
 
             // perform collision
             if let Some(_) = collision {
-                // remove the enemy
+                // remove the block
                 commands.entity(block_entity).despawn();
 
                 // remove the laser
@@ -360,4 +376,23 @@ fn animate_explosion_system(
             }
         }
     }
+}
+
+
+#[derive(Component)]
+struct BlockToDecimate(Vec3);
+
+fn block_decimate_system(mut commands: Commands, game_textures: Res<GameAssets>, 
+    query: Query<(Entity, &BlockToDecimate)>    ) {
+        for (entity, target_block) in query.iter() {
+            commands
+                .spawn_bundle(SpriteBundle {
+                    texture: game_textures.block_medium.clone(),
+                    transform: Transform {
+                        translation: target_block.0,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                });
+        }
 }
