@@ -1,6 +1,5 @@
 mod components;
 use bevy::{prelude::*, sprite::collide_aabb::collide};
-use components::*;
 
 const SCREEN_WIDTH: f32 = 1000.0;
 const SCREEN_HEIGHT: f32 = 1000.0;
@@ -40,32 +39,25 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(GameSetup)
+        .add_startup_system(asset_setup_system)
+        .add_startup_system(game_setup_system)
+        .add_startup_system(actor_setup_system.after(asset_setup_system))
+        .add_startup_system(block_setup_system.after(asset_setup_system))
+        .add_startup_system(block_medium_setup_system.after(asset_setup_system))
+        .add_system(actor_keyboard_event_system)
+        .add_system(actor_move_system)
+        .add_system(player_laser_spawn_system)
+        .add_system(laser_move_system)
+        .add_system(laser_hit_system)
+        .add_system(explosion_to_spawn_system)
+        .add_system(animate_explosion_system)
+        .add_system(block_decimate_system)
         .run();
 }
 
 pub struct WinSize {
     pub w: f32,
     pub h: f32,
-}
-
-pub struct GameSetup;
-
-impl Plugin for GameSetup {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system(asset_setup_system)
-            .add_startup_system(actor_setup_system)
-            .add_startup_system(block_setup_system)
-            .add_startup_system(block_medium_setup_system)
-            .add_startup_system(game_setup_system)
-            .add_system(actor_keyboard_event_system)
-            .add_system(actor_move_system)
-            .add_system(player_laser_spawn_system)
-            .add_system(laser_move_system)
-            .add_system(laser_hit_system)
-            .add_system(explosion_to_spawn_system)
-            .add_system(animate_explosion_system);
-    }
 }
 
 fn game_setup_system(mut commands: Commands, windows: Res<Windows>) {
@@ -81,13 +73,13 @@ fn game_setup_system(mut commands: Commands, windows: Res<Windows>) {
 }
 
 #[derive(Component)]
-pub struct GameAssets {
+pub struct GameTextures {
     pub actor_animation_sprite: Handle<TextureAtlas>,
     pub explosion_animation_sprite: Handle<TextureAtlas>,
-    pub actor: Handle<Image>,
-    pub block_large: Handle<Image>,
-    pub block_medium: Handle<Image>,
-    pub laser: Handle<Image>,
+    // pub actor: Handle<Image>,
+    // pub block_large: Handle<Image>,
+    // pub block_medium: Handle<Image>,
+    // pub laser: Handle<Image>,
 }
 
 fn asset_setup_system(
@@ -122,27 +114,28 @@ fn asset_setup_system(
     );
     let explosion_atlas_handle = atlas_server.add(texture_atlas);
 
-    commands.insert_resource(GameAssets {
-		actor: asset_server.load(ACTOR_SPRITE),
-		block_large: asset_server.load(BLOCK_SPRITE),
-		block_medium: asset_server.load(BLOCK_MEDIUM_SPRITE),
-		laser: asset_server.load(LASER_SPRITE),
+    let game_textures = GameTextures {
+        // actor: asset_server.load(ACTOR_SPRITE),
+        // block_large: asset_server.load(BLOCK_SPRITE),
+        // block_medium: asset_server.load(BLOCK_MEDIUM_SPRITE),
+        // laser: asset_server.load(LASER_SPRITE),
         actor_animation_sprite: texture_atlas_handle,
         explosion_animation_sprite: explosion_atlas_handle,
-    });
+    };
+    commands.insert_resource(game_textures);
 }
 
 #[derive(Component)]
 pub struct Block;
 
 #[derive(Component)]
-pub enum BlockSize{
+pub enum BlockSize {
     Small(u8),
     Medimum(u8),
     Large(u8),
 }
 
-fn block_setup_system(mut commands: Commands, game_textures: Res<GameAssets>) {
+fn block_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     let (x, y) = (
         SCREEN_WIDTH_OFFSET - BLOCK_SPRITE_OFFSET,
         -SCREEN_HEIGHT_OFFSET + BLOCK_SPRITE_OFFSET,
@@ -151,9 +144,9 @@ fn block_setup_system(mut commands: Commands, game_textures: Res<GameAssets>) {
 
     commands
         .spawn_bundle(SpriteBundle {
-            texture: game_textures.block_large.clone(),
+            texture: asset_server.load(BLOCK_SPRITE),
             transform: Transform {
-                scale: Vec3::new(1.4285, 1.4285, 1.),   // 10/7 - scale to 100px
+                scale: Vec3::new(1.4285, 1.4285, 1.), // 10/7 - scale to 100px
                 translation: Vec3::new(x, y, 2.0),
                 ..Default::default()
             },
@@ -164,7 +157,7 @@ fn block_setup_system(mut commands: Commands, game_textures: Res<GameAssets>) {
         .insert(BlockSize::Large(100));
 }
 
-fn block_medium_setup_system(mut commands: Commands, game_textures: Res<GameAssets>) {
+fn block_medium_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     let (mut x, mut y) = (
         SCREEN_WIDTH_OFFSET - BLOCK_MEDIUM_SPRITE_OFFSET,
         -SCREEN_HEIGHT_OFFSET + BLOCK_MEDIUM_SPRITE_OFFSET,
@@ -173,7 +166,7 @@ fn block_medium_setup_system(mut commands: Commands, game_textures: Res<GameAsse
 
     commands
         .spawn_bundle(SpriteBundle {
-            texture: game_textures.block_medium.clone(),
+            texture: asset_server.load(BLOCK_MEDIUM_SPRITE),
             transform: Transform {
                 scale: Vec3::new(BLOCK_MEDIUM_SCALE, BLOCK_MEDIUM_SCALE, 1.),
                 translation: Vec3::new(x, y, 2.0),
@@ -203,7 +196,7 @@ fn actor_move_system(mut query: Query<(&Velocity, &mut Transform), With<Actor>>)
     }
 }
 
-fn actor_setup_system(mut commands: Commands, game_textures: Res<GameAssets>) {
+fn actor_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     let (x, y) = (
         -SCREEN_WIDTH_OFFSET + ACTOR_SPRITE_OFFSET,
         -SCREEN_HEIGHT_OFFSET + ACTOR_SPRITE_OFFSET,
@@ -212,7 +205,7 @@ fn actor_setup_system(mut commands: Commands, game_textures: Res<GameAssets>) {
 
     commands
         .spawn_bundle(SpriteBundle {
-            texture: game_textures.actor.clone(),
+            texture: asset_server.load(ACTOR_SPRITE),
             transform: Transform {
                 scale: Vec3::new(ACTOR_SCALE, ACTOR_SCALE, 1.),
                 translation: Vec3::new(x, y, 2.0),
@@ -256,7 +249,7 @@ fn player_laser_spawn_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     kb: Res<Input<KeyCode>>,
-    query: Query<(&Transform), With<Actor>>,
+    query: Query<&Transform, With<Actor>>,
 ) {
     if let Ok(player_tf) = query.get_single() {
         if kb.just_pressed(KeyCode::Space) {
@@ -319,7 +312,8 @@ fn laser_hit_system(
                 // spawn the explosionToSpawn
                 commands
                     .spawn()
-                    .insert(ExplosionToSpawn(block_transform.translation.clone()));
+                    .insert(ExplosionToSpawn(block_transform.translation.clone()))
+                    .insert(BlockToDecimate(block_transform.translation.clone()));
             }
         }
     }
@@ -334,7 +328,7 @@ struct ExplosionToSpawn(pub Vec3);
 fn explosion_to_spawn_system(
     mut commands: Commands,
     query: Query<(Entity, &ExplosionToSpawn)>,
-    game_textures: Res<GameAssets>,
+    game_textures: Res<GameTextures>,
 ) {
     for (entity, explosion_to_spawn) in query.iter() {
         commands
@@ -378,21 +372,37 @@ fn animate_explosion_system(
     }
 }
 
-
 #[derive(Component)]
 struct BlockToDecimate(Vec3);
 
-fn block_decimate_system(mut commands: Commands, game_textures: Res<GameAssets>, 
-    query: Query<(Entity, &BlockToDecimate)>    ) {
-        for (entity, target_block) in query.iter() {
-            commands
-                .spawn_bundle(SpriteBundle {
-                    texture: game_textures.block_medium.clone(),
-                    transform: Transform {
-                        translation: target_block.0,
+fn block_decimate_system(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    query: Query<(Entity, &BlockToDecimate)>,
+) {
+    for (entity, target_block) in query.iter() {
+        commands.entity(entity).despawn();
+
+        let x = target_block.0.x;
+        let y = target_block.0.y;
+
+        for row in 0..10 {
+            for col in 0..10 {
+                commands
+                    .spawn_bundle(SpriteBundle {
+                        texture: asset_server.load(BLOCK_MEDIUM_SPRITE),
+                        transform: Transform {
+                            translation: Vec3::new(
+                                x + row as f32 * 10.0,
+                                y + col as f32 * 10.0,
+                                10.0,
+                            ),
+                            ..Default::default()
+                        },
                         ..Default::default()
-                    },
-                    ..Default::default()
-                });
+                    })
+                    .insert(Block);
+            }
         }
+    }
 }
