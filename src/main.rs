@@ -146,7 +146,7 @@ fn block_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn_bundle(SpriteBundle {
             texture: asset_server.load(BLOCK_SPRITE),
             transform: Transform {
-                scale: Vec3::new(1.4285, 1.4285, 1.), // 10/7 - scale to 100px
+                // scale: Vec3::new(1.4285, 1.4285, 1.), // 10/7 - scale to 100px
                 translation: Vec3::new(x, y, 2.0),
                 ..Default::default()
             },
@@ -383,11 +383,16 @@ fn block_decimate_system(
     for (entity, target_block) in query.iter() {
         commands.entity(entity).despawn();
 
-        let x = target_block.0.x;
-        let y = target_block.0.y;
+        let mut x = target_block.0.x;
+        let mut y = target_block.0.y;
 
-        for row in 0..10 {
-            for col in 0..10 {
+        x += -60.0;
+        y += -40.0;
+
+        const FOONUM: f32 = 7.0;
+
+        for row in 0..FOONUM as i32 {
+            for col in 0..FOONUM as i32 {
                 commands
                     .spawn_bundle(SpriteBundle {
                         texture: asset_server.load(BLOCK_MEDIUM_SPRITE),
@@ -401,7 +406,9 @@ fn block_decimate_system(
                         },
                         ..Default::default()
                     })
-                    .insert(Block);
+                    .insert(SpriteSize::from(BLOCK_MEDIUM_SPRITE_SIZE))
+                    .insert(Block)
+                    .insert(BlockSize::Medimum(10));
             }
         }
     }
