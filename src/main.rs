@@ -1,5 +1,5 @@
 mod components;
-use bevy::{prelude::*, sprite::collide_aabb::collide};
+use bevy::{prelude::*, sprite::collide_aabb::collide, utils::HashSet};
 
 const SCREEN_WIDTH: f32 = 1000.0;
 const SCREEN_HEIGHT: f32 = 1000.0;
@@ -76,9 +76,9 @@ fn game_setup_system(mut commands: Commands, windows: Res<Windows>) {
 pub struct GameTextures {
     pub actor_animation_sprite: Handle<TextureAtlas>,
     pub explosion_animation_sprite: Handle<TextureAtlas>,
-    // pub actor: Handle<Image>,
-    // pub block_large: Handle<Image>,
-    // pub block_medium: Handle<Image>,
+    pub actor: Handle<Image>,
+    pub block_large: Handle<Image>,
+    pub block_medium: Handle<Image>,
     // pub laser: Handle<Image>,
 }
 
@@ -115,9 +115,9 @@ fn asset_setup_system(
     let explosion_atlas_handle = atlas_server.add(texture_atlas);
 
     let game_textures = GameTextures {
-        // actor: asset_server.load(ACTOR_SPRITE),
-        // block_large: asset_server.load(BLOCK_SPRITE),
-        // block_medium: asset_server.load(BLOCK_MEDIUM_SPRITE),
+        actor: asset_server.load(ACTOR_SPRITE),
+        block_large: asset_server.load(BLOCK_SPRITE),
+        block_medium: asset_server.load(BLOCK_MEDIUM_SPRITE),
         // laser: asset_server.load(LASER_SPRITE),
         actor_animation_sprite: texture_atlas_handle,
         explosion_animation_sprite: explosion_atlas_handle,
@@ -236,7 +236,7 @@ fn actor_keyboard_event_system(
 #[derive(Component)]
 pub struct Laser;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct SpriteSize(pub Vec2);
 
 impl From<(f32, f32)> for SpriteSize {
@@ -266,7 +266,7 @@ fn player_laser_spawn_system(
                     ..Default::default()
                 })
                 .insert(Velocity { x: 5.0, y: 0.0 })
-                .insert(SpriteSize::from(LASER_SPRITE_SIZE))
+                .insert(SpriteSize::from((20.0,10.0)))
                 .insert(Laser);
         }
     }
@@ -292,30 +292,45 @@ fn laser_hit_system(
     mut laser_query: Query<(Entity, &Transform, &SpriteSize), With<Laser>>,
     block_query: Query<(Entity, &Transform, &SpriteSize), With<Block>>,
 ) {
+    let mut despawned: HashSet<Entity> = HashSet::new();
     for (laser_entity, laser_transform, laser_sprite_size) in laser_query.iter_mut() {
-        for (block_entity, block_transform, block_sprite_size) in block_query.iter() {
-            let collision = collide(
-                laser_transform.translation,
-                laser_sprite_size.0,
-                block_transform.translation,
-                block_sprite_size.0,
-            );
-
-            // perform collision
-            if let Some(_) = collision {
-                // remove the block
-                commands.entity(block_entity).despawn();
-
-                // remove the laser
-                commands.entity(laser_entity).despawn();
-
-                // spawn the explosionToSpawn
-                commands
-                    .spawn()
-                    .insert(ExplosionToSpawn(block_transform.translation.clone()))
-                    .insert(BlockToDecimate(block_transform.translation.clone()));
-            }
+        if despawned.contains(&laser_entity) {
+            continue;
         }
+            for (block_entity, block_transform, block_sprite_size) in block_query.iter() {
+                if despawned.contains(&block_entity) {
+                    continue;
+                }
+
+                let collision = collide(
+                    laser_transform.translation,
+                    laser_sprite_size.0,
+                    block_transform.translation,
+                    block_sprite_size.0,
+                );
+    
+                // perform collision
+                if let Some(_) = collision {
+                    // remove the block
+                    despawned.insert(block_entity);
+                    commands.entity(block_entity).despawn();
+    
+                    // remove the laser
+                    despawned.insert(laser_entity);
+                    commands.entity(laser_entity).despawn();
+    
+                    // spawn the explosionToSpawn
+                    let mut explosion_location = block_transform.translation.clone();
+                    // move up the Z
+                    explosion_location[2] = 500.0;
+    
+                    commands
+                        .spawn()
+                        .insert(ExplosionToSpawn(explosion_location))
+                        .insert(BlockToDecimate(block_transform.translation.clone()))
+                        .insert(block_sprite_size.clone());
+                }
+            }
     }
 }
 
@@ -378,16 +393,18 @@ struct BlockToDecimate(Vec3);
 fn block_decimate_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    query: Query<(Entity, &BlockToDecimate)>,
+    query: Query<(Entity, &BlockToDecimate, &SpriteSize)>,
 ) {
-    for (entity, target_block) in query.iter() {
-        commands.entity(entity).despawn();
+    for (entity, target_block, block_size) in query.iter() {
+        if block_size.0[0] == 10.0 { continue }
+
+        // commands.entity(entity).despawn();
 
         let mut x = target_block.0.x;
         let mut y = target_block.0.y;
 
-        x += -60.0;
-        y += -40.0;
+        x += -30.0;
+        y += -30.0;
 
         const FOONUM: f32 = 7.0;
 
@@ -400,7 +417,7 @@ fn block_decimate_system(
                             translation: Vec3::new(
                                 x + row as f32 * 10.0,
                                 y + col as f32 * 10.0,
-                                10.0,
+                                2.0,
                             ),
                             ..Default::default()
                         },
