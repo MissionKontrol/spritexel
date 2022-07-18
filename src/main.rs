@@ -1,10 +1,12 @@
 mod components;
 mod block;
 mod actor;
-use bevy::{prelude::*, sprite::collide_aabb::collide, utils::HashSet};
+mod laser;
+use bevy::{prelude::*, utils::HashSet};
 use block::*;
 use actor::*;
 use components::*;
+use laser::*;
 
 const SCREEN_WIDTH: f32 = 1000.0;
 const SCREEN_HEIGHT: f32 = 1000.0;
@@ -40,7 +42,7 @@ fn main() {
         .add_system(laser_move_system)
         .add_system(laser_hit_system)
         .add_system(explosion_to_spawn_system)
-        .add_system(animate_explosion_system)
+        .add_system(explosion_animate_system)
         .add_system(block_decimate_system)
         .run();
 }
@@ -57,8 +59,6 @@ fn game_setup_system(mut commands: Commands, windows: Res<Windows>) {
     };
     commands.insert_resource(win_size);
 }
-
-
 
 fn asset_setup_system(
     mut commands: Commands,
@@ -102,72 +102,7 @@ fn asset_setup_system(
     commands.insert_resource(DespawnedList(HashSet::new()))
 }
 
-fn laser_move_system(
-    mut commands: Commands,
-    mut query: Query<(Entity, &Velocity, &mut Transform), With<Laser>>,
-    win_size: Res<WinSize>,
-) {
-    for (entity, velocity, mut transform) in query.iter_mut() {
-        let translation = &mut transform.translation;
-        translation.x += velocity.x * 5.0;
-
-        if translation.x >= win_size.w / 2.0 {
-            commands.entity(entity).despawn();
-        }
-    }
-}
-
-struct DespawnedList(pub HashSet<Entity>);
-
-fn laser_hit_system(
-    mut commands: Commands,
-    mut despawned_list: ResMut<DespawnedList>,
-    mut laser_query: Query<(Entity, &Transform, &SpriteSize), With<Laser>>,
-    block_query: Query<(Entity, &Transform, &SpriteSize, &BlockSize), With<Block>>,
-) {
-    let despawned = &mut despawned_list.0;
-    for (laser_entity, laser_transform, laser_sprite_size) in laser_query.iter_mut() {
-        if despawned.contains(&laser_entity) {
-            continue;
-        }
-            for (block_entity, block_transform, block_sprite_size, block_size) in block_query.iter() {
-                if despawned.contains(&block_entity) || despawned.contains(&laser_entity) {
-                    continue;
-                }
-
-                let collision = collide(
-                    laser_transform.translation,
-                    laser_sprite_size.0,
-                    block_transform.translation,
-                    block_sprite_size.0,
-                );
-    
-                // perform collision
-                if let Some(_) = collision {
-                    // remove the block
-                    despawned.insert(block_entity);
-                    commands.entity(block_entity).despawn();
-    
-                    // remove the laser
-                    despawned.insert(laser_entity);
-                    commands.entity(laser_entity).despawn();
-    
-                    // spawn the explosionToSpawn
-                    let mut explosion_location = block_transform.translation.clone();
-                    // move up the Z
-                    explosion_location[2] = 500.0;
-    
-                    commands
-                        .spawn()
-                        .insert(ExplosionToSpawn(explosion_location))
-                        .insert(BlockToDecimate(block_transform.translation.clone()))
-                        .insert(block_size.clone());
-                }
-            }
-    }
-}
-
-fn explosion_to_spawn_system(
+pub fn explosion_to_spawn_system(
     mut commands: Commands,
     query: Query<(Entity, &ExplosionToSpawn)>,
     game_textures: Res<GameTextures>,
@@ -189,7 +124,7 @@ fn explosion_to_spawn_system(
     }
 }
 
-fn animate_explosion_system(
+fn explosion_animate_system(
     mut commands: Commands,
     time: Res<Time>,
     mut query: Query<(Entity, &mut ExplosionTimer, &mut TextureAtlasSprite), With<Explosion>>,

@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 
 pub struct WinSize {
     pub w: f32,
@@ -65,3 +65,5 @@ pub enum BlockSize {
     Medimum(u8),
     Large(u8),
 }
+
+pub struct DespawnedList(pub HashSet<Entity>);
