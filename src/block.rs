@@ -12,9 +12,7 @@ pub const BLOCK_MEDIUM_SPRITE: &str = "metalSmallCenterSticker.png";
 pub const BLOCK_MEDIUM_SCALE: f32 = 1.0;
 pub const BLOCK_MEDIUM_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
 
-
-
-pub fn block_large_setup_system(mut commands: Commands, asset_server: Res<AssetServer>, raw_map: Res<RawMap>) {
+pub fn block_large_setup_system(mut commands: Commands, game_textures: Res<GameTextures>, raw_map: Res<RawMap>) {
     const NUMBER_COLS: usize = 10;
 
     let blocks_to_spawn = raw_map.0.iter().enumerate()
@@ -32,7 +30,7 @@ pub fn block_large_setup_system(mut commands: Commands, asset_server: Res<AssetS
         );
         commands
         .spawn_bundle(SpriteBundle {
-            texture: asset_server.load(BLOCK_SPRITE),
+            texture: game_textures.block_large.clone(),
             transform: Transform {
                 // scale: Vec3::new(1.4285, 1.4285, 1.), // 10/7 - scale to 100px
                 translation: Vec3::new(screen_x, screen_y, 2.0),
@@ -46,7 +44,7 @@ pub fn block_large_setup_system(mut commands: Commands, asset_server: Res<AssetS
     }
 }
 
-pub fn block_medium_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn block_medium_setup_system(mut commands: Commands, game_textures: Res<GameTextures>) {
     let (mut x, mut y) = (
         SCREEN_WIDTH_OFFSET - BLOCK_MEDIUM_SPRITE_OFFSET,
         -SCREEN_HEIGHT_OFFSET + BLOCK_MEDIUM_SPRITE_OFFSET,
@@ -55,7 +53,7 @@ pub fn block_medium_setup_system(mut commands: Commands, asset_server: Res<Asset
 
     commands
         .spawn_bundle(SpriteBundle {
-            texture: asset_server.load(BLOCK_MEDIUM_SPRITE),
+            texture: game_textures.block_medium.clone(),
             transform: Transform {
                 scale: Vec3::new(BLOCK_MEDIUM_SCALE, BLOCK_MEDIUM_SCALE, 1.),
                 translation: Vec3::new(x, y, 2.0),
@@ -78,3 +76,47 @@ pub fn block_map_setup_system(mut commands: Commands) {
         commands.insert_resource(RawMap(file_buffer));
     }
 }
+
+pub fn block_decimate_system(
+    mut commands: Commands,
+    game_textures: Res<GameTextures>,
+    query: Query<(&BlockToDecimate, &BlockSize)>,
+) {
+    for ( target_block, block_size) in query.iter() {
+        if let BlockSize::Medimum(_) = block_size {
+            continue
+        }
+
+        // commands.entity(entity).despawn();
+
+        let mut x = target_block.0.x;
+        let mut y = target_block.0.y;
+
+        x += -30.0;
+        y += -30.0;
+
+        const FOONUM: f32 = 7.0;
+
+        for row in 0..FOONUM as i32 {
+            for col in 0..FOONUM as i32 {
+                commands
+                    .spawn_bundle(SpriteBundle {
+                        texture: game_textures.block_medium.clone(),
+                        transform: Transform {
+                            translation: Vec3::new(
+                                x + row as f32 * 10.0,
+                                y + col as f32 * 10.0,
+                                2.0,
+                            ),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    })
+                    .insert(SpriteSize::from(BLOCK_MEDIUM_SPRITE_SIZE))
+                    .insert(Block)
+                    .insert(BlockSize::Medimum(10));
+            }
+        }
+    }
+}
+

@@ -3,7 +3,7 @@ mod block;
 mod actor;
 mod laser;
 use std::{fs::File, io::{BufReader, Read}};
-use bevy_inspector_egui::{WorldInspectorParams, WorldInspectorPlugin};
+// use bevy_inspector_egui::{WorldInspectorParams, WorldInspectorPlugin};
 use bevy::{prelude::*, utils::HashSet};
 use block::*;
 use actor::*;
@@ -33,7 +33,7 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(WorldInspectorPlugin::new())
+        // .add_plugin(WorldInspectorPlugin::new())
         // .add_plugin(InspectorPlugin::<Data>::new())
         .add_system_set(SystemSet::on_enter(GameState::StartUp)
             .with_system(asset_setup_system)
@@ -55,13 +55,6 @@ fn main() {
             .with_system(explosion_animate_system)
             .with_system(block_decimate_system))
         .run();
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
-enum GameState {
-    StartUp,
-    GameSetup,
-    Running,
 }
 
 fn game_run_system(mut state: ResMut<State<GameState>>) {
@@ -161,50 +154,3 @@ fn explosion_animate_system(
         }
     }
 }
-
-
-fn block_decimate_system(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    query: Query<(&BlockToDecimate, &BlockSize)>,
-) {
-    for ( target_block, block_size) in query.iter() {
-        if let BlockSize::Medimum(_) = block_size {
-            continue
-        }
-
-        // commands.entity(entity).despawn();
-
-        let mut x = target_block.0.x;
-        let mut y = target_block.0.y;
-
-        x += -30.0;
-        y += -30.0;
-
-        const FOONUM: f32 = 7.0;
-
-        for row in 0..FOONUM as i32 {
-            for col in 0..FOONUM as i32 {
-                commands
-                    .spawn_bundle(SpriteBundle {
-                        texture: asset_server.load(BLOCK_MEDIUM_SPRITE),
-                        transform: Transform {
-                            translation: Vec3::new(
-                                x + row as f32 * 10.0,
-                                y + col as f32 * 10.0,
-                                2.0,
-                            ),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    })
-                    .insert(SpriteSize::from(BLOCK_MEDIUM_SPRITE_SIZE))
-                    .insert(Block)
-                    .insert(BlockSize::Medimum(10));
-            }
-        }
-    }
-}
-
-
-

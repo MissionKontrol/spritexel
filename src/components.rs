@@ -5,6 +5,13 @@ pub struct WinSize {
     pub h: f32,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+pub enum GameState {
+    StartUp,
+    GameSetup,
+    Running,
+}
+
 #[derive(Component)]
 pub struct GameTextures {
     pub actor_animation_sprite: Handle<TextureAtlas>,
