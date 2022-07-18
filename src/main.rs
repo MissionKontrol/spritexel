@@ -3,7 +3,7 @@ mod block;
 mod actor;
 mod laser;
 use std::{fs::File, io::{BufReader, Read}};
-
+use bevy_inspector_egui::{WorldInspectorParams, WorldInspectorPlugin};
 use bevy::{prelude::*, utils::HashSet};
 use block::*;
 use actor::*;
@@ -33,6 +33,7 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins)
+        .add_plugin(WorldInspectorPlugin::new())
         // .add_plugin(InspectorPlugin::<Data>::new())
         .add_system_set(SystemSet::on_enter(GameState::StartUp)
             .with_system(asset_setup_system)

@@ -6,7 +6,7 @@ pub const BLOCK_MEDIUM_SPRITE_SIZE: (f32, f32) = (10.0, 10.0);
 
 pub const BLOCK_SPRITE: &str = "metalCenter.png";
 pub const _BLOCK_SCALE: f32 = 1.0;
-pub const _BLOCK_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
+pub const BLOCK_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
 
 pub const BLOCK_MEDIUM_SPRITE: &str = "metalSmallCenterSticker.png";
 pub const BLOCK_MEDIUM_SCALE: f32 = 1.0;
@@ -16,18 +16,19 @@ pub const BLOCK_MEDIUM_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
 
 pub fn block_large_setup_system(mut commands: Commands, asset_server: Res<AssetServer>, raw_map: Res<RawMap>) {
     const NUMBER_COLS: usize = 10;
+
     let blocks_to_spawn = raw_map.0.iter().enumerate()
         .filter(|(_, x)| char::from(**x) == '#' )
-        .map(|(n,i)| {
-            let x: usize = n % NUMBER_COLS as usize;
-            let y: usize = n / NUMBER_COLS as usize;
+        .map(|(n,_)| {
+            let x: usize = n % (NUMBER_COLS + 1);   // guess the \n is a countable char too
+            let y: usize = n / (NUMBER_COLS + 1);   // so add it in
             (x,y)
         }).collect::<Vec<(usize,usize)>>();
     
     for (x,y) in blocks_to_spawn.iter() {
         let (screen_x, screen_y) = (
-            *x as f32 * 100. - SCREEN_WIDTH / 2.,
-            *y as f32 * 100. - SCREEN_HEIGHT / 2.,
+            *x as f32 * 100. - SCREEN_WIDTH / 2. + (BLOCK_SPRITE_OFFSET * (NUMBER_COLS as f32 - *x as f32)) + BLOCK_SPRITE_OFFSET,
+            *y as f32 * 100. - SCREEN_HEIGHT / 2. - (BLOCK_SPRITE_OFFSET * *y as f32) + BLOCK_SPRITE_OFFSET,
         );
         commands
         .spawn_bundle(SpriteBundle {
