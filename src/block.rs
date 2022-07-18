@@ -13,17 +13,8 @@ pub const BLOCK_MEDIUM_SCALE: f32 = 1.0;
 pub const BLOCK_MEDIUM_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
 
 
-#[derive(Component)]
-pub struct Block;
 
-#[derive(Component)]
-pub enum BlockSize {
-    _Small(u8),
-    Medimum(u8),
-    Large(u8),
-}
-
-pub fn block_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn block_large_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     let (x, y) = (
         SCREEN_WIDTH_OFFSET - BLOCK_SPRITE_OFFSET,
         -SCREEN_HEIGHT_OFFSET + BLOCK_SPRITE_OFFSET,

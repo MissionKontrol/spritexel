@@ -54,3 +54,14 @@ impl Default for ExplosionTimer {
 
 #[derive(Component)]
 pub struct BlockToDecimate(pub Vec3);
+
+
+#[derive(Component)]
+pub struct Block;
+
+#[derive(Component, Clone)]
+pub enum BlockSize {
+    _Small(u8),
+    Medimum(u8),
+    Large(u8),
+}

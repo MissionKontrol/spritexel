@@ -32,7 +32,7 @@ fn main() {
         .add_startup_system(asset_setup_system)
         .add_startup_system(game_setup_system)
         .add_startup_system(actor_setup_system.after(asset_setup_system))
-        .add_startup_system(block_setup_system.after(asset_setup_system))
+        .add_startup_system(block_large_setup_system.after(asset_setup_system))
         .add_startup_system(block_medium_setup_system.after(asset_setup_system))
         .add_system(actor_keyboard_event_system)
         .add_system(actor_move_system)
@@ -97,6 +97,9 @@ fn asset_setup_system(
         explosion_animation_sprite: explosion_atlas_handle,
     };
     commands.insert_resource(game_textures);
+
+    // In Game resources
+    commands.insert_resource(DespawnedList(HashSet::new()))
 }
 
 fn laser_move_system(
@@ -114,18 +117,21 @@ fn laser_move_system(
     }
 }
 
+struct DespawnedList(pub HashSet<Entity>);
+
 fn laser_hit_system(
     mut commands: Commands,
+    mut despawned_list: ResMut<DespawnedList>,
     mut laser_query: Query<(Entity, &Transform, &SpriteSize), With<Laser>>,
-    block_query: Query<(Entity, &Transform, &SpriteSize), With<Block>>,
+    block_query: Query<(Entity, &Transform, &SpriteSize, &BlockSize), With<Block>>,
 ) {
-    let mut despawned: HashSet<Entity> = HashSet::new();
+    let despawned = &mut despawned_list.0;
     for (laser_entity, laser_transform, laser_sprite_size) in laser_query.iter_mut() {
         if despawned.contains(&laser_entity) {
             continue;
         }
-            for (block_entity, block_transform, block_sprite_size) in block_query.iter() {
-                if despawned.contains(&block_entity) {
+            for (block_entity, block_transform, block_sprite_size, block_size) in block_query.iter() {
+                if despawned.contains(&block_entity) || despawned.contains(&laser_entity) {
                     continue;
                 }
 
@@ -155,7 +161,7 @@ fn laser_hit_system(
                         .spawn()
                         .insert(ExplosionToSpawn(explosion_location))
                         .insert(BlockToDecimate(block_transform.translation.clone()))
-                        .insert(block_sprite_size.clone());
+                        .insert(block_size.clone());
                 }
             }
     }
@@ -203,10 +209,12 @@ fn animate_explosion_system(
 fn block_decimate_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    query: Query<(&BlockToDecimate, &SpriteSize)>,
+    query: Query<(&BlockToDecimate, &BlockSize)>,
 ) {
     for ( target_block, block_size) in query.iter() {
-        if block_size.0[0] == 10.0 { continue }
+        if let BlockSize::Medimum(_) = block_size {
+            continue
+        }
 
         // commands.entity(entity).despawn();
 
