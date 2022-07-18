@@ -44,7 +44,7 @@ fn main() {
             .with_system(block_large_setup_system)
             .with_system(block_medium_setup_system)
             .with_system(game_run_system))
-        .add_system_set(SystemSet::on_enter(GameState::Running)
+        .add_system_set(SystemSet::on_update(GameState::Running)
             .with_system(actor_keyboard_event_system)
             .with_system(actor_move_system)
             .with_system(actor_laser_spawn_system)
