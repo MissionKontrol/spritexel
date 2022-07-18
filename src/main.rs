@@ -2,6 +2,8 @@ mod components;
 mod block;
 mod actor;
 mod laser;
+use std::{fs::File, io::{BufReader, Read}};
+
 use bevy::{prelude::*, utils::HashSet};
 use block::*;
 use actor::*;
@@ -22,6 +24,7 @@ const EXPLOSION_LENGTH: usize = 6;
 
 fn main() {
     App::new()
+        .add_state(GameState::StartUp)
         .insert_resource(WindowDescriptor {
             title: "I am a window!".to_string(),
             mode: bevy::window::WindowMode::Windowed,
@@ -31,24 +34,40 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         // .add_plugin(InspectorPlugin::<Data>::new())
-        .add_startup_system(asset_setup_system)
-        .add_startup_system(game_setup_system)
-        .add_startup_system(actor_setup_system.after(asset_setup_system))
-        .add_startup_system(block_large_setup_system.after(asset_setup_system))
-        .add_startup_system(block_medium_setup_system.after(asset_setup_system))
-        .add_system(actor_keyboard_event_system)
-        .add_system(actor_move_system)
-        .add_system(actor_laser_spawn_system)
-        .add_system(laser_move_system)
-        .add_system(laser_hit_system)
-        .add_system(explosion_to_spawn_system)
-        .add_system(explosion_animate_system)
-        .add_system(block_decimate_system)
+        .add_system_set(SystemSet::on_enter(GameState::StartUp)
+            .with_system(asset_setup_system)
+            .with_system(block_map_setup_system)
+            .with_system(game_setup_system)
+        )
+        .add_system_set(SystemSet::on_enter(GameState::GameSetup)
+            .with_system(actor_setup_system)
+            .with_system(block_large_setup_system)
+            .with_system(block_medium_setup_system)
+            .with_system(game_run_system))
+        .add_system_set(SystemSet::on_enter(GameState::Running)
+            .with_system(actor_keyboard_event_system)
+            .with_system(actor_move_system)
+            .with_system(actor_laser_spawn_system)
+            .with_system(laser_move_system)
+            .with_system(laser_hit_system)
+            .with_system(explosion_to_spawn_system)
+            .with_system(explosion_animate_system)
+            .with_system(block_decimate_system))
         .run();
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+enum GameState {
+    StartUp,
+    GameSetup,
+    Running,
+}
 
-fn game_setup_system(mut commands: Commands, windows: Res<Windows>) {
+fn game_run_system(mut state: ResMut<State<GameState>>) {
+    state.set(GameState::Running).unwrap();
+}
+
+fn game_setup_system(mut commands: Commands, windows: Res<Windows>, mut state: ResMut<State<GameState>>) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
     let window = windows.get_primary().unwrap();
@@ -58,6 +77,8 @@ fn game_setup_system(mut commands: Commands, windows: Res<Windows>) {
         h: win_height,
     };
     commands.insert_resource(win_size);
+
+    state.set(GameState::GameSetup).unwrap();
 }
 
 fn asset_setup_system(
@@ -183,3 +204,6 @@ fn block_decimate_system(
         }
     }
 }
+
+
+

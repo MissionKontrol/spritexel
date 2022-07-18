@@ -66,4 +66,7 @@ pub enum BlockSize {
     Large(u8),
 }
 
+#[derive(Component)]
+pub struct RawMap(pub Vec<u8>);
+
 pub struct DespawnedList(pub HashSet<Entity>);
