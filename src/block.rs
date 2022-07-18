@@ -2,12 +2,13 @@ use bevy::prelude::*;
 use crate::*;
 
 pub const BLOCK_SPRITE_SIZE: (f32, f32) = (70.0, 70.0);
-pub const BLOCK_MEDIUM_SPRITE_SIZE: (f32, f32) = (10.0, 10.0);
 
 pub const BLOCK_SPRITE: &str = "metalCenter.png";
 pub const _BLOCK_SCALE: f32 = 1.0;
 pub const BLOCK_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
 
+pub const BLOCK_MEDIUM_SPRITE_SIZE: (f32, f32) = (10.0, 10.0);
+pub const BLOCK_MEDIUM_SIZE: f32 = 10.;
 pub const BLOCK_MEDIUM_SPRITE: &str = "metalSmallCenterSticker.png";
 pub const BLOCK_MEDIUM_SCALE: f32 = 1.0;
 pub const BLOCK_MEDIUM_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
@@ -63,7 +64,7 @@ pub fn block_medium_setup_system(mut commands: Commands, game_textures: Res<Game
         })
         .insert(SpriteSize::from(BLOCK_MEDIUM_SPRITE_SIZE))
         .insert(Block)
-        .insert(BlockSize::Medimum(10));
+        .insert(BlockSize::Medium(10));
 }
 
 pub fn block_map_setup_system(mut commands: Commands) {
@@ -83,30 +84,25 @@ pub fn block_decimate_system(
     query: Query<(&BlockToDecimate, &BlockSize)>,
 ) {
     for ( target_block, block_size) in query.iter() {
-        if let BlockSize::Medimum(_) = block_size {
+        if let BlockSize::Medium(_) = block_size {
             continue
         }
+        const MEDIUM_ROW_RATIO: f32 = 7.0;    // 7:1 med:large
+        const OFFSET: f32 = 30.;
 
-        // commands.entity(entity).despawn();
+        let x = target_block.0.x - OFFSET;
+        let y = target_block.0.y - OFFSET;
 
-        let mut x = target_block.0.x;
-        let mut y = target_block.0.y;
-
-        x += -30.0;
-        y += -30.0;
-
-        const FOONUM: f32 = 7.0;
-
-        for row in 0..FOONUM as i32 {
-            for col in 0..FOONUM as i32 {
+        for row in 0..MEDIUM_ROW_RATIO as i32 {
+            for col in 0..MEDIUM_ROW_RATIO as i32 {
                 commands
                     .spawn_bundle(SpriteBundle {
                         texture: game_textures.block_medium.clone(),
                         transform: Transform {
                             translation: Vec3::new(
-                                x + row as f32 * 10.0,
-                                y + col as f32 * 10.0,
-                                2.0,
+                                x + row as f32 * BLOCK_MEDIUM_SIZE,
+                                y + col as f32 * BLOCK_MEDIUM_SIZE,
+                                10.0,
                             ),
                             ..Default::default()
                         },
@@ -114,7 +110,7 @@ pub fn block_decimate_system(
                     })
                     .insert(SpriteSize::from(BLOCK_MEDIUM_SPRITE_SIZE))
                     .insert(Block)
-                    .insert(BlockSize::Medimum(10));
+                    .insert(BlockSize::Medium(10));
             }
         }
     }

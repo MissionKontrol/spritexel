@@ -69,7 +69,7 @@ pub struct Block;
 #[derive(Component, Clone)]
 pub enum BlockSize {
     _Small(u8),
-    Medimum(u8),
+    Medium(u8),
     Large(u8),
 }
 

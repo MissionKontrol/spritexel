@@ -57,6 +57,7 @@ fn main() {
         .run();
 }
 
+
 fn game_run_system(mut state: ResMut<State<GameState>>) {
     state.set(GameState::Running).unwrap();
 }
