@@ -112,6 +112,7 @@ pub fn block_decimate_system(
                     })
                     .insert(SpriteSize::from(BLOCK_MEDIUM_SPRITE_SIZE))
                     .insert(Block)
+                    .insert(BlockHeat::new())
                     .insert(BlockSize::Medium(10));
             }
         }

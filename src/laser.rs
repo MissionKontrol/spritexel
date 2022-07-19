@@ -56,13 +56,23 @@ pub fn laser_hit_system(
                         let mut explosion_location = block_transform.translation.clone();
                         // move up the Z
                         explosion_location[2] = 500.0;
-        
+
                         commands
                             .spawn()
                             .insert(ExplosionToSpawn(explosion_location))
                             .insert(BlockToDecimate(block_transform.translation.clone()))
                             .insert(block_size.clone());
                     }
+
+                    // spawn the explosionToSpawn
+                    let mut explosion_location = block_transform.translation.clone();
+                    // move up the Z
+                    explosion_location[2] = 500.0;
+
+                    commands
+                        .spawn()
+                        .insert(ExplosionToSpawn(explosion_location))
+                        .insert(block_size.clone());
 
                     // remove the laser
                     despawned.insert(laser_entity);
