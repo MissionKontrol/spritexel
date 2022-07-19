@@ -41,6 +41,7 @@ pub fn block_large_setup_system(mut commands: Commands, game_textures: Res<GameT
         })
         .insert(SpriteSize::from(BLOCK_SPRITE_SIZE))
         .insert(Block)
+        .insert(BlockHeat::new())
         .insert(BlockSize::Large(100));
     }
 }
@@ -64,6 +65,7 @@ pub fn block_medium_setup_system(mut commands: Commands, game_textures: Res<Game
         })
         .insert(SpriteSize::from(BLOCK_MEDIUM_SPRITE_SIZE))
         .insert(Block)
+        .insert(BlockHeat::new())
         .insert(BlockSize::Medium(10));
 }
 

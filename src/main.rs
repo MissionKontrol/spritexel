@@ -57,7 +57,6 @@ fn main() {
         .run();
 }
 
-
 fn game_run_system(mut state: ResMut<State<GameState>>) {
     state.set(GameState::Running).unwrap();
 }
@@ -155,3 +154,13 @@ fn explosion_animate_system(
         }
     }
 }
+
+#[derive(Component)]
+pub struct BlockHeat(pub u32);
+
+impl BlockHeat {
+    fn new() -> Self {
+        BlockHeat(1000)  // avoid that negative situation for  while I guess
+    }
+}
+
