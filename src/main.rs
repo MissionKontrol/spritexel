@@ -4,7 +4,7 @@ mod actor;
 mod laser;
 use std::{fs::File, io::{BufReader, Read}};
 // use bevy_inspector_egui::{WorldInspectorParams, WorldInspectorPlugin};
-use bevy::{prelude::*, utils::HashSet};
+use bevy::{prelude::*, utils::HashSet, sprite::collide_aabb::collide};
 use block::*;
 use actor::*;
 use components::*;
@@ -53,7 +53,8 @@ fn main() {
             .with_system(laser_hit_system)
             .with_system(explosion_to_spawn_system)
             .with_system(explosion_animate_system)
-            .with_system(block_decimate_system))
+            .with_system(block_decimate_system)
+            .with_system(block_support_scan_system))
         .run();
 }
 
@@ -169,8 +170,20 @@ pub struct Unsupported(pub Vec3);
 
 fn block_support_scan_system(mut commands: Commands,
     query: Query<&Unsupported>,
+    mut query_blocks: Query<(&mut Transform), With<Block>>
 ) {
     for unsupported in query.iter() {
-        
+        for mut block in query_blocks.iter_mut() {
+            let probe_start = unsupported.0;
+            let probe_size = Vec2::new(1.0,1024.0);
+            let target_size = Vec2::new(10.,10.);
+
+            if let Some(_) = collide(probe_start, probe_size, block.translation, target_size){
+                let mut position = block.translation;
+                position[1] +=  -10.0;    // down one block?
+                block.translation = position;
+            }
+
+        }
     }
 }

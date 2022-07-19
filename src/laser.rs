@@ -58,7 +58,7 @@ pub fn laser_hit_system(
                         location[2] = 500.0;
 
                         match block_size {
-                            BlockSize::Large((_)) => {commands
+                            BlockSize::Large(_) => {commands
                                 .spawn()
                                 .insert(ExplosionToSpawn(location))
                                 .insert(BlockToDecimate(block_transform.translation.clone()))
