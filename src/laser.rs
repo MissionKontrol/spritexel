@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::collide_aabb::collide};
 
-use crate::{components::{Velocity, Laser, WinSize, DespawnedList, SpriteSize, BlockSize, Block, ExplosionToSpawn, BlockToDecimate}, BlockHeat};
+use crate::{components::{Velocity, Laser, WinSize, DespawnedList, SpriteSize, BlockSize, Block, ExplosionToSpawn, BlockToDecimate}, BlockHeat, Unsupported};
 
 pub fn laser_move_system(
     mut commands: Commands,
@@ -53,15 +53,22 @@ pub fn laser_hit_system(
                         commands.entity(block_entity).despawn();
 
                         // spawn the explosionToSpawn
-                        let mut explosion_location = block_transform.translation.clone();
+                        let mut location = block_transform.translation.clone();
                         // move up the Z
-                        explosion_location[2] = 500.0;
+                        location[2] = 500.0;
 
-                        commands
-                            .spawn()
-                            .insert(ExplosionToSpawn(explosion_location))
-                            .insert(BlockToDecimate(block_transform.translation.clone()))
-                            .insert(block_size.clone());
+                        match block_size {
+                            BlockSize::Large((_)) => {commands
+                                .spawn()
+                                .insert(ExplosionToSpawn(location))
+                                .insert(BlockToDecimate(block_transform.translation.clone()))
+                                .insert(block_size.clone());}
+                            BlockSize::Medium(_) => {commands
+                                .spawn()
+                                .insert(ExplosionToSpawn(location))
+                                .insert(Unsupported(location));}
+                            _ => panic!("Unsupported Block size")
+                        }
                     }
 
                     // spawn the explosionToSpawn

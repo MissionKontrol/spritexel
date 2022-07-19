@@ -164,3 +164,13 @@ impl BlockHeat {
     }
 }
 
+#[derive(Component)]
+pub struct Unsupported(pub Vec3);
+
+fn block_support_scan_system(mut commands: Commands,
+    query: Query<&Unsupported>,
+) {
+    for unsupported in query.iter() {
+        
+    }
+}
