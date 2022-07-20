@@ -3,7 +3,7 @@ mod block;
 mod actor;
 mod laser;
 use std::{fs::File, io::{BufReader, Read}};
-// use bevy_inspector_egui::{WorldInspectorParams, WorldInspectorPlugin};
+use bevy_inspector_egui::{WorldInspectorParams, WorldInspectorPlugin};
 use bevy::{prelude::*, utils::HashSet, sprite::collide_aabb::collide};
 use block::*;
 use actor::*;
@@ -33,7 +33,7 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins)
-        // .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(WorldInspectorPlugin::new())
         // .add_plugin(InspectorPlugin::<Data>::new())
         .add_system_set(SystemSet::on_enter(GameState::StartUp)
             .with_system(asset_setup_system)
@@ -46,6 +46,9 @@ fn main() {
             .with_system(block_medium_setup_system)
             .with_system(game_run_system))
         .add_system_set(SystemSet::on_update(GameState::Running)
+            .with_system(block_support_scan_system)
+            .with_system(block_falling_system.after(block_support_scan_system))
+            .with_system(remove_unsupported_block.after(block_falling_system))
             .with_system(actor_keyboard_event_system)
             .with_system(actor_move_system)
             .with_system(actor_laser_spawn_system)
@@ -53,10 +56,7 @@ fn main() {
             .with_system(laser_hit_system)
             .with_system(explosion_to_spawn_system)
             .with_system(explosion_animate_system)
-            .with_system(block_decimate_system)
-            .with_system(block_support_scan_system)
-            .with_system(block_falling_system.after(block_support_scan_system))
-            .with_system(remove_unsupported_block.after(block_falling_system)))
+            .with_system(block_decimate_system))
         .run();
 }
 
@@ -207,6 +207,8 @@ fn block_falling_system(mut commands: Commands,
 ){
         for ( falling_entity, mut falling_transform, falling_block) in falling_query.iter_mut() {
             let mut collision_block_size;
+            let mut collision: bool = false;
+
             for (collision_transform, collision_block) in collision_query.iter() {
                 match collision_block {
                     BlockSize::Large(size) => collision_block_size = Vec2::new(*size as f32,*size as f32),
@@ -222,15 +224,21 @@ fn block_falling_system(mut commands: Commands,
                 };
 
                 if let Some(_) = collide(
-                    falling_transform.translation,
+                    falling_transform.translation - 1.,
                     falling_block_size,
                     collision_transform.translation,
                     collision_block_size,
                 ){
                     commands.entity(falling_entity)
                         .remove::<BlockFalling>();
+                    
+                    collision = true;
+                    break;
                 }
+             }
+            
+            if !collision {
+                falling_transform.translation[1] += -1.0;
             }
-            falling_transform.translation[1] += -1.0;
         }
     }

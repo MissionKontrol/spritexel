@@ -24,10 +24,11 @@ pub fn block_large_setup_system(mut commands: Commands, game_textures: Res<GameT
             (x,y)
         }).collect::<Vec<(usize,usize)>>();
     
+    let initial_y_position = -(SCREEN_HEIGHT / 2.0) + BLOCK_SPRITE_OFFSET;  //-465.;
     for (x,y) in blocks_to_spawn.iter() {
         let (screen_x, screen_y) = (
             *x as f32 * 100. - SCREEN_WIDTH / 2. + (BLOCK_SPRITE_OFFSET * (NUMBER_COLS as f32 - *x as f32)) + BLOCK_SPRITE_OFFSET,
-            *y as f32 * 100. - SCREEN_HEIGHT / 2. - (BLOCK_SPRITE_OFFSET * *y as f32) + BLOCK_SPRITE_OFFSET,
+            initial_y_position + (BLOCK_SPRITE_SIZE.1 * *y as f32),  //465, 395, 325
         );
         commands
         .spawn_bundle(SpriteBundle {
