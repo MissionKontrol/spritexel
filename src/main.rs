@@ -55,7 +55,8 @@ fn main() {
             .with_system(explosion_animate_system)
             .with_system(block_decimate_system)
             .with_system(block_support_scan_system)
-            .with_system(block_falling_system.after(block_support_scan_system)))
+            .with_system(block_falling_system.after(block_support_scan_system))
+            .with_system(remove_unsupported_block.after(block_falling_system)))
         .run();
 }
 
@@ -173,10 +174,10 @@ pub struct Unsupported(pub Vec3);
 pub struct BlockFalling;
 
 fn block_support_scan_system(mut commands: Commands,
-    query: Query<(Entity,&Unsupported)>,
+    query: Query<&Unsupported>,
     mut query_blocks: Query<(Entity, &mut Transform), With<Block>>
 ) {
-    for (unsupported_entity, unsupported) in query.iter() {
+    for unsupported in query.iter() {
         for (block_entity, block) in query_blocks.iter_mut() {
             let mut probe_start = unsupported.0;
             let y_length = 1000. ;      
@@ -189,7 +190,14 @@ fn block_support_scan_system(mut commands: Commands,
                     .insert(BlockFalling);
             }
         }
-        commands.entity(unsupported_entity).despawn();  // move to next frame
+    }
+}
+
+fn remove_unsupported_block(mut commands: Commands,
+    query: Query<Entity, With<Unsupported>>,
+){
+    for entity in query.iter(){
+        commands.entity(entity).despawn();  // move to next frame
     }
 }
 
@@ -198,8 +206,6 @@ fn block_falling_system(mut commands: Commands,
     collision_query: Query<(&Transform, &BlockSize), (With<Block>, Without<BlockFalling>)>    
 ){
         for ( falling_entity, mut falling_transform, falling_block) in falling_query.iter_mut() {
-            falling_transform.translation[1] += -1.0;
-
             let mut collision_block_size;
             for (collision_transform, collision_block) in collision_query.iter() {
                 match collision_block {
@@ -208,7 +214,7 @@ fn block_falling_system(mut commands: Commands,
                     _ => collision_block_size = Vec2::new(1.0,1.0),
                 };
 
-                let mut falling_block_size;
+                let falling_block_size;
                 match falling_block {
                     BlockSize::Large(size) => falling_block_size = Vec2::new(*size as f32,*size as f32),
                     BlockSize::Medium(size) => falling_block_size = Vec2::new(*size as f32,*size as f32),
@@ -221,11 +227,10 @@ fn block_falling_system(mut commands: Commands,
                     collision_transform.translation,
                     collision_block_size,
                 ){
-                    falling_transform.translation[1] -= 1.0;    //stop the fall?
                     commands.entity(falling_entity)
                         .remove::<BlockFalling>();
                 }
             }
-
+            falling_transform.translation[1] += -1.0;
         }
     }
