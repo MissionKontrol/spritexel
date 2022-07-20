@@ -4,7 +4,7 @@ mod actor;
 mod laser;
 use std::{fs::File, io::{BufReader, Read}};
 // use bevy_inspector_egui::{WorldInspectorParams, WorldInspectorPlugin};
-use bevy::{prelude::*, utils::HashSet, sprite::collide_aabb::collide};
+use bevy::{prelude::*, utils::HashSet, sprite::collide_aabb::collide, sprite::collide_aabb::Collision};
 use block::*;
 use actor::*;
 use components::*;
@@ -54,7 +54,8 @@ fn main() {
             .with_system(explosion_to_spawn_system)
             .with_system(explosion_animate_system)
             .with_system(block_decimate_system)
-            .with_system(block_support_scan_system))
+            .with_system(block_support_scan_system)
+            .with_system(block_falling_system.after(block_support_scan_system)))
         .run();
 }
 
@@ -168,22 +169,53 @@ impl BlockHeat {
 #[derive(Component)]
 pub struct Unsupported(pub Vec3);
 
+#[derive(Component)]
+pub struct BlockFalling;
+
 fn block_support_scan_system(mut commands: Commands,
-    query: Query<&Unsupported>,
-    mut query_blocks: Query<(&mut Transform), With<Block>>
+    query: Query<(Entity,&Unsupported)>,
+    mut query_blocks: Query<(Entity, &mut Transform), With<Block>>
 ) {
-    for unsupported in query.iter() {
-        for mut block in query_blocks.iter_mut() {
-            let probe_start = unsupported.0;
-            let probe_size = Vec2::new(1.0,1024.0);
+    for (unsupported_entity, unsupported) in query.iter() {
+        for (block_entity, block) in query_blocks.iter_mut() {
+            let mut probe_start = unsupported.0;
+            let y_length = 1000. ;
+            probe_start[1] += y_length/2.0;
+            let probe_size = Vec2::new(1.0, y_length);
             let target_size = Vec2::new(10.,10.);
 
             if let Some(_) = collide(probe_start, probe_size, block.translation, target_size){
-                let mut position = block.translation;
-                position[1] +=  -10.0;    // down one block?
-                block.translation = position;
+                // let mut position = block.translation;
+                // position[1] +=  -10.0;    // down one block?
+                // block.translation = position;
+
+                commands.entity(block_entity)
+                    .insert(BlockFalling);
+            }
+        }
+        commands.entity(unsupported_entity).despawn();
+    }
+}
+
+fn block_falling_system(mut commands: Commands, 
+    mut query: Query<(Entity, &mut Transform), With<BlockFalling>>,
+    collision_query: Query<&Transform, (With<Block>, Without<BlockFalling>)>    
+){
+        for ( entity, mut transform) in query.iter_mut() {
+            transform.translation[1] += -1.0;
+
+            for collision_transform in collision_query.iter() {
+                if let Some(_) = collide(
+                    transform.translation,
+                    Vec2::new(10.0,10.0),
+                    collision_transform.translation,
+                    Vec2::new(10.0,10.0)
+                ){
+                    transform.translation[1] -= 1.0;    //stop the fall?
+                    commands.entity(entity)
+                        .remove::<BlockFalling>();
+                }
             }
 
         }
     }
-}

@@ -43,7 +43,7 @@ pub fn laser_hit_system(
                 );
                 
                 const LASER_HEAT:u32 = 1000;
-                const BLOCK_MAX_HEAT: u32 = 3000;
+                const BLOCK_MAX_HEAT: u32 = 1001;
                 // perform collision
                 if let Some(_) = collision {
                     block_heat.0 += LASER_HEAT;
