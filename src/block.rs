@@ -42,7 +42,7 @@ pub fn block_large_setup_system(mut commands: Commands, game_textures: Res<GameT
         .insert(SpriteSize::from(BLOCK_SPRITE_SIZE))
         .insert(Block)
         .insert(BlockHeat::new())
-        .insert(BlockSize::Large(100));
+        .insert(BlockSize::Large(70));
     }
 }
 

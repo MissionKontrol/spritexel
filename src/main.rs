@@ -4,7 +4,7 @@ mod actor;
 mod laser;
 use std::{fs::File, io::{BufReader, Read}};
 // use bevy_inspector_egui::{WorldInspectorParams, WorldInspectorPlugin};
-use bevy::{prelude::*, utils::HashSet, sprite::collide_aabb::collide, sprite::collide_aabb::Collision};
+use bevy::{prelude::*, utils::HashSet, sprite::collide_aabb::collide};
 use block::*;
 use actor::*;
 use components::*;
@@ -179,40 +179,50 @@ fn block_support_scan_system(mut commands: Commands,
     for (unsupported_entity, unsupported) in query.iter() {
         for (block_entity, block) in query_blocks.iter_mut() {
             let mut probe_start = unsupported.0;
-            let y_length = 1000. ;
-            probe_start[1] += y_length/2.0;
+            let y_length = 1000. ;      
+            probe_start[1] += y_length/2.0; // scan from the top-ish
             let probe_size = Vec2::new(1.0, y_length);
             let target_size = Vec2::new(10.,10.);
 
             if let Some(_) = collide(probe_start, probe_size, block.translation, target_size){
-                // let mut position = block.translation;
-                // position[1] +=  -10.0;    // down one block?
-                // block.translation = position;
-
                 commands.entity(block_entity)
                     .insert(BlockFalling);
             }
         }
-        commands.entity(unsupported_entity).despawn();
+        commands.entity(unsupported_entity).despawn();  // move to next frame
     }
 }
 
 fn block_falling_system(mut commands: Commands, 
-    mut query: Query<(Entity, &mut Transform), With<BlockFalling>>,
-    collision_query: Query<&Transform, (With<Block>, Without<BlockFalling>)>    
+    mut falling_query: Query<(Entity, &mut Transform, &BlockSize), With<BlockFalling>>,
+    collision_query: Query<(&Transform, &BlockSize), (With<Block>, Without<BlockFalling>)>    
 ){
-        for ( entity, mut transform) in query.iter_mut() {
-            transform.translation[1] += -1.0;
+        for ( falling_entity, mut falling_transform, falling_block) in falling_query.iter_mut() {
+            falling_transform.translation[1] += -1.0;
 
-            for collision_transform in collision_query.iter() {
+            let mut collision_block_size;
+            for (collision_transform, collision_block) in collision_query.iter() {
+                match collision_block {
+                    BlockSize::Large(size) => collision_block_size = Vec2::new(*size as f32,*size as f32),
+                    BlockSize::Medium(size) => collision_block_size = Vec2::new(*size as f32,*size as f32),
+                    _ => collision_block_size = Vec2::new(1.0,1.0),
+                };
+
+                let mut falling_block_size;
+                match falling_block {
+                    BlockSize::Large(size) => falling_block_size = Vec2::new(*size as f32,*size as f32),
+                    BlockSize::Medium(size) => falling_block_size = Vec2::new(*size as f32,*size as f32),
+                    _ => falling_block_size = Vec2::new(1.0,1.0),
+                };
+
                 if let Some(_) = collide(
-                    transform.translation,
-                    Vec2::new(10.0,10.0),
+                    falling_transform.translation,
+                    falling_block_size,
                     collision_transform.translation,
-                    Vec2::new(10.0,10.0)
+                    collision_block_size,
                 ){
-                    transform.translation[1] -= 1.0;    //stop the fall?
-                    commands.entity(entity)
+                    falling_transform.translation[1] -= 1.0;    //stop the fall?
+                    commands.entity(falling_entity)
                         .remove::<BlockFalling>();
                 }
             }
