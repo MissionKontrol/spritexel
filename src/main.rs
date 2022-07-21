@@ -193,6 +193,26 @@ fn block_support_scan_system(mut commands: Commands,
     }
 }
 
+// fn falling_block_group_system(mut commands: Commands,
+//     falling_query: Query<(&BlockSize,&Transform), With<BlockFalling>>,
+// )   {
+//     const X: usize = 0;
+//     const Y: usize = 1;
+//     const Z: usize = 2;
+
+//       falling_query.iter()
+//         .map(|(_, transform)| {
+//             let (x,y) = (transform.translation[X],transform.translation[Y]);
+            
+//             })
+//         .collect::<Vec<(f32,f32)>>()
+//         .sort_by(| a, b| a.partial_cmp(b).unwrap())
+//         ;
+
+
+    
+// }
+
 fn remove_unsupported_block(mut commands: Commands,
     query: Query<Entity, With<Unsupported>>,
 ){
