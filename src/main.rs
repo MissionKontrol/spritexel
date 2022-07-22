@@ -3,8 +3,8 @@ mod block;
 mod actor;
 mod laser;
 use std::{fs::File, io::{BufReader, Read}};
-use bevy_inspector_egui::{WorldInspectorParams, WorldInspectorPlugin};
-use bevy::{prelude::*, utils::HashSet, sprite::collide_aabb::collide};
+use bevy_inspector_egui::{WorldInspectorPlugin};
+use bevy::{prelude::*, utils::{HashSet, HashMap}, sprite::collide_aabb::collide};
 use block::*;
 use actor::*;
 use components::*;
@@ -193,25 +193,32 @@ fn block_support_scan_system(mut commands: Commands,
     }
 }
 
-// fn falling_block_group_system(mut commands: Commands,
-//     falling_query: Query<(&BlockSize,&Transform), With<BlockFalling>>,
-// )   {
-//     const X: usize = 0;
-//     const Y: usize = 1;
-//     const Z: usize = 2;
+fn _falling_block_group_system(mut _commands: Commands,
+    falling_query: Query<(&BlockSize,&Transform), With<BlockFalling>>,
+)   {
+    const X: usize = 0;
+    const Y: usize = 1;
+    const Z: usize = 2;
+    const ROW_OFFSET: f32 = GRID_WIDTH - BLOCK_SPRITE_OFFSET;
 
-//       falling_query.iter()
-//         .map(|(_, transform)| {
-//             let (x,y) = (transform.translation[X],transform.translation[Y]);
-            
-//             })
-//         .collect::<Vec<(f32,f32)>>()
-//         .sort_by(| a, b| a.partial_cmp(b).unwrap())
-//         ;
+    let _falling_dict = falling_query.iter()
+        .map(|(block_size, transform)| {
+            let x_y: TupleI32 = (transform.translation[X],transform.translation[Y]).into();
 
+            (x_y, (block_size, transform))
+            })
+        .into_iter()
+        .collect::<HashMap<TupleI32,(&BlockSize,&Transform)>>();
+}
 
-    
-// }
+#[derive(PartialEq, Eq, Hash)]
+struct TupleI32(i32,i32);
+
+impl From<(f32,f32)> for TupleI32 {
+    fn from((x,y): (f32, f32)) -> Self {
+        TupleI32(x.floor() as i32, y.floor() as i32)
+    }
+}
 
 fn remove_unsupported_block(mut commands: Commands,
     query: Query<Entity, With<Unsupported>>,

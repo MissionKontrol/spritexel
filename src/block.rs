@@ -13,6 +13,8 @@ pub const BLOCK_MEDIUM_SPRITE: &str = "metalSmallCenterSticker.png";
 pub const BLOCK_MEDIUM_SCALE: f32 = 1.0;
 pub const BLOCK_MEDIUM_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
 
+pub const GRID_WIDTH: f32 = 100.;
+
 pub fn block_large_setup_system(mut commands: Commands, game_textures: Res<GameTextures>, raw_map: Res<RawMap>) {
     const NUMBER_COLS: usize = 10;
 
@@ -25,7 +27,6 @@ pub fn block_large_setup_system(mut commands: Commands, game_textures: Res<GameT
         }).collect::<Vec<(usize,usize)>>();
     
     let initial_y_position = -(SCREEN_HEIGHT / 2.0) + BLOCK_SPRITE_OFFSET;  //-465. align bottom
-    const GRID_WIDTH: f32 = 100.;
     for (x,y) in blocks_to_spawn.iter() {
         let (screen_x, screen_y) = (
             *x as f32 * 100. - SCREEN_WIDTH / 2. + (GRID_WIDTH - BLOCK_SPRITE_OFFSET),
