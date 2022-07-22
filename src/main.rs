@@ -5,6 +5,7 @@ mod laser;
 use std::{fs::File, io::{BufReader, Read}};
 use bevy_inspector_egui::{WorldInspectorPlugin};
 use bevy::{prelude::*, utils::{HashSet, HashMap}, sprite::collide_aabb::collide};
+// use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use block::*;
 use actor::*;
 use components::*;
@@ -33,6 +34,8 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins)
+        // .add_plugin(LogDiagnosticsPlugin::default())
+        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(WorldInspectorPlugin::new())
         // .add_plugin(InspectorPlugin::<Data>::new())
         .add_system_set(SystemSet::on_enter(GameState::StartUp)
@@ -180,7 +183,7 @@ fn block_support_scan_system(mut commands: Commands,
     for unsupported in query.iter() {
         for (block_entity, block) in query_blocks.iter_mut() {
             let mut probe_start = unsupported.0;
-            let y_length = 1000. ;      
+            let y_length = SCREEN_HEIGHT;      
             probe_start[1] += y_length/2.0; // scan from the top-ish
             let probe_size = Vec2::new(1.0, y_length);
             let target_size = Vec2::new(10.,10.);
