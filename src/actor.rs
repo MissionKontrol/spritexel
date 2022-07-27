@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::*;
+use bevy::prelude::*;
 
 pub const ACTOR_SPRITE_SIZE: (f32, f32) = (70.0, 70.0);
 pub const ACTOR_SPRITE: &str = "laserUp.png";
@@ -32,7 +32,6 @@ pub fn actor_setup_system(mut commands: Commands, asset_server: Res<AssetServer>
                 scale: Vec3::new(ACTOR_SCALE, ACTOR_SCALE, 1.),
                 translation: Vec3::new(x, y, 2.0),
                 rotation: Quat::from_rotation_z(4.71_f32), // rads is 270 degrees counter-clockwise
-                ..Default::default()
             },
             ..Default::default()
         })
@@ -76,7 +75,7 @@ pub fn actor_laser_spawn_system(
                     ..Default::default()
                 })
                 .insert(Velocity { x: 5.0, y: 0.0 })
-                .insert(SpriteSize::from((70.0,8.0)))
+                .insert(SpriteSize::from((70.0, 8.0)))
                 .insert(Laser);
         }
     }

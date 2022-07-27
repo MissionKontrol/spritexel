@@ -58,10 +58,8 @@ impl Default for ExplosionTimer {
     }
 }
 
-
 #[derive(Component)]
 pub struct BlockToDecimate(pub Vec3);
-
 
 #[derive(Component)]
 pub struct Block;

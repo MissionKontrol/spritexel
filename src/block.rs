@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::*;
+use bevy::prelude::*;
 
 pub const BLOCK_SPRITE_SIZE: (f32, f32) = (70.0, 70.0);
 
@@ -15,37 +15,45 @@ pub const BLOCK_MEDIUM_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
 
 pub const GRID_WIDTH: f32 = 100.;
 
-pub fn block_large_setup_system(mut commands: Commands, game_textures: Res<GameTextures>, raw_map: Res<RawMap>) {
+pub fn block_large_setup_system(
+    mut commands: Commands,
+    game_textures: Res<GameTextures>,
+    raw_map: Res<RawMap>,
+) {
     const NUMBER_COLS: usize = 10;
 
-    let blocks_to_spawn = raw_map.0.iter().enumerate()
-        .filter(|(_, x)| char::from(**x) == '#' )
-        .map(|(n,_)| {
-            let x: usize = n % (NUMBER_COLS + 1);   // guess the \n is a countable char too
-            let y: usize = n / (NUMBER_COLS + 1);   // so add it in
-            (x,y)
-        }).collect::<Vec<(usize,usize)>>();
-    
-    let initial_y_position = -(SCREEN_HEIGHT / 2.0) + BLOCK_SPRITE_OFFSET;  //-465. align bottom
-    for (x,y) in blocks_to_spawn.iter() {
+    let blocks_to_spawn = raw_map
+        .0
+        .iter()
+        .enumerate()
+        .filter(|(_, x)| char::from(**x) == '#')
+        .map(|(n, _)| {
+            let x: usize = n % (NUMBER_COLS + 1); // guess the \n is a countable char too
+            let y: usize = n / (NUMBER_COLS + 1); // so add it in
+            (x, y)
+        })
+        .collect::<Vec<(usize, usize)>>();
+
+    let initial_y_position = -(SCREEN_HEIGHT / 2.0) + BLOCK_SPRITE_OFFSET; //-465. align bottom
+    for (x, y) in blocks_to_spawn.iter() {
         let (screen_x, screen_y) = (
             *x as f32 * 100. - SCREEN_WIDTH / 2. + (GRID_WIDTH - BLOCK_SPRITE_OFFSET),
-            initial_y_position + (BLOCK_SPRITE_SIZE.1 * *y as f32),  //465, 395, 325
+            initial_y_position + (BLOCK_SPRITE_SIZE.1 * *y as f32), //465, 395, 325
         );
         commands
-        .spawn_bundle(SpriteBundle {
-            texture: game_textures.block_large.clone(),
-            transform: Transform {
-                // scale: Vec3::new(1.4285, 1.4285, 1.), // 10/7 - scale to 100px
-                translation: Vec3::new(screen_x, screen_y, 2.0),
+            .spawn_bundle(SpriteBundle {
+                texture: game_textures.block_large.clone(),
+                transform: Transform {
+                    // scale: Vec3::new(1.4285, 1.4285, 1.), // 10/7 - scale to 100px
+                    translation: Vec3::new(screen_x, screen_y, 2.0),
+                    ..Default::default()
+                },
                 ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert(SpriteSize::from(BLOCK_SPRITE_SIZE))
-        .insert(Block)
-        .insert(BlockHeat::new())
-        .insert(BlockSize::Large(70));
+            })
+            .insert(SpriteSize::from(BLOCK_SPRITE_SIZE))
+            .insert(Block)
+            .insert(BlockHeat::new())
+            .insert(BlockSize::Large(70));
     }
 }
 
@@ -76,9 +84,9 @@ pub fn block_map_setup_system(mut commands: Commands) {
     let map_input = File::open("assets/map.txt").expect("no file or something");
 
     let mut reader = BufReader::new(map_input);
-    let mut file_buffer: Vec<u8> =Vec::new();
+    let mut file_buffer: Vec<u8> = Vec::new();
 
-    if let Ok(_) = reader.read_to_end(&mut file_buffer){
+    if reader.read_to_end(&mut file_buffer).is_ok() {
         commands.insert_resource(RawMap(file_buffer));
     }
 }
@@ -88,11 +96,11 @@ pub fn block_decimate_system(
     game_textures: Res<GameTextures>,
     query: Query<(&BlockToDecimate, &BlockSize)>,
 ) {
-    for ( target_block, block_size) in query.iter() {
+    for (target_block, block_size) in query.iter() {
         if let BlockSize::Medium(_) = block_size {
-            continue
+            continue;
         }
-        const MEDIUM_ROW_RATIO: f32 = 7.0;    // 7:1 med:large
+        const MEDIUM_ROW_RATIO: f32 = 7.0; // 7:1 med:large
         const OFFSET: f32 = 30.;
 
         let x = target_block.0.x - OFFSET;
@@ -121,4 +129,3 @@ pub fn block_decimate_system(
         }
     }
 }
-
