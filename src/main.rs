@@ -177,10 +177,10 @@ pub struct Unsupported(pub Vec3);
 pub struct BlockFalling;
 
 fn block_support_scan_system(mut commands: Commands,
-    query: Query<&Unsupported>,
+    query_unsupported: Query<&Unsupported>,
     mut query_blocks: Query<(Entity, &mut Transform), With<Block>>
 ) {
-    for unsupported in query.iter() {
+    for unsupported in query_unsupported.iter() {
         for (block_entity, block) in query_blocks.iter_mut() {
             let mut probe_start = unsupported.0;
             let y_length = SCREEN_HEIGHT;      
@@ -236,21 +236,22 @@ fn block_falling_system(mut commands: Commands,
     collision_query: Query<(&Transform, &BlockSize), (With<Block>, Without<BlockFalling>)>    
 ){
         for ( falling_entity, mut falling_transform, falling_block) in falling_query.iter_mut() {
-            let mut collision_block_size;
             let mut collision: bool = false;
+            let falling_block_size;
+
+            match falling_block {
+                BlockSize::Large(size) => falling_block_size = Vec2::new(*size as f32,*size as f32),
+                BlockSize::Medium(size) => falling_block_size = Vec2::new(*size as f32,*size as f32),
+                _ => falling_block_size = Vec2::new(1.0,1.0),
+            };
 
             for (collision_transform, collision_block) in collision_query.iter() {
+                let collision_block_size;
+            
                 match collision_block {
                     BlockSize::Large(size) => collision_block_size = Vec2::new(*size as f32,*size as f32),
                     BlockSize::Medium(size) => collision_block_size = Vec2::new(*size as f32,*size as f32),
                     _ => collision_block_size = Vec2::new(1.0,1.0),
-                };
-
-                let falling_block_size;
-                match falling_block {
-                    BlockSize::Large(size) => falling_block_size = Vec2::new(*size as f32,*size as f32),
-                    BlockSize::Medium(size) => falling_block_size = Vec2::new(*size as f32,*size as f32),
-                    _ => falling_block_size = Vec2::new(1.0,1.0),
                 };
 
                 if let Some(_) = collide(
