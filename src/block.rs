@@ -27,8 +27,8 @@ pub fn block_large_setup_system(
 
     for (x, y) in blocks {
         let (screen_x, screen_y) = (
-            x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2.,
-            y as f32 * GRID_WIDTH - SCREEN_HEIGHT / 2. + BLOCK_LARGE_SPRITE_OFFSET,
+            x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2. + BLOCK_LARGE_SPRITE_OFFSET,
+            -(y as f32 * GRID_WIDTH - SCREEN_HEIGHT / 2. + BLOCK_LARGE_SPRITE_OFFSET),
         );
         commands
             .spawn_bundle(SpriteBundle {
@@ -66,11 +66,12 @@ pub fn block_support_setup_system(
     block_map: Res<BlockMap>,
 ) {
     let blocks = get_blocks_from_map('S', block_map);
+    dbg!(&blocks);
 
     for (x, y) in blocks {
         let (screen_x, screen_y) = (
-            x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2.,
-            y as f32 * GRID_WIDTH - SCREEN_HEIGHT / 2. + BLOCK_LARGE_SPRITE_OFFSET,
+            x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2. + BLOCK_LARGE_SPRITE_OFFSET,
+            -(y as f32 * GRID_WIDTH - SCREEN_HEIGHT / 2. + BLOCK_LARGE_SPRITE_OFFSET),
         );
         commands
             .spawn_bundle(SpriteBundle {
