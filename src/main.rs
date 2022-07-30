@@ -169,7 +169,7 @@ fn explosion_animate_system(
     for (entity, mut timer, mut sprite) in query.iter_mut() {
         timer.0.tick(time.delta());
         if timer.0.finished() {
-            sprite.index += 1; // move to next sprite cell
+            sprite.index += 1; 
             if sprite.index >= EXPLOSION_LENGTH {
                 commands.entity(entity).despawn()
             }

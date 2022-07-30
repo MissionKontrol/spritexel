@@ -51,7 +51,7 @@ fn get_blocks_from_map(block_selector: char, block_map: Res<BlockMap>) -> Vec<(u
         .0
         .iter()
         .enumerate()
-        .filter(|(i, x)| char::from(**x) == block_selector)
+        .filter(|(_, x)| char::from(**x) == block_selector)
         .map(|(n, _)| {
             let x: usize = n % (NUMBER_COLS);
             let y: usize = n / (NUMBER_COLS);
@@ -70,8 +70,8 @@ pub fn block_support_setup_system(
 
     for (x, y) in blocks {
         let (screen_x, screen_y) = (
-            x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2. + BLOCK_LARGE_SPRITE_OFFSET,
-            -(y as f32 * GRID_WIDTH - SCREEN_HEIGHT / 2. + BLOCK_LARGE_SPRITE_OFFSET),
+            x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2. + BLOCK_SUPPORT_SPRITE_OFFSET,
+            -(y as f32 * GRID_WIDTH - SCREEN_HEIGHT / 2. + BLOCK_SUPPORT_SPRITE_OFFSET),
         );
         commands
             .spawn_bundle(SpriteBundle {
