@@ -20,11 +20,10 @@ pub fn block_large_setup_system(
     game_textures: Res<GameTextures>,
     block_map: Res<BlockMap>,
 ) {
-    let initial_y_position = -(SCREEN_HEIGHT / 2.0) + BLOCK_LARGE_SPRITE_OFFSET; // align bottom
     for (x, y) in block_map.0.iter() {
         let (screen_x, screen_y) = (
             *x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2. ,
-            initial_y_position + (BLOCK_LARGE_SPRITE_SIZE.1 * *y as f32), 
+            *y as f32 * GRID_WIDTH - SCREEN_HEIGHT / 2. + BLOCK_LARGE_SPRITE_OFFSET, 
         );
         commands
             .spawn_bundle(SpriteBundle {
@@ -38,7 +37,7 @@ pub fn block_large_setup_system(
             .insert(SpriteSize::from(BLOCK_LARGE_SPRITE_SIZE))
             .insert(Block)
             .insert(BlockHeat::new())
-            .insert(BlockSize::Large(70));
+            .insert(BlockSize::Large(64));
     }
 }
 
