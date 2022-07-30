@@ -2,10 +2,12 @@ use crate::*;
 use bevy::prelude::*;
 
 pub const BLOCK_LARGE_SPRITE_SIZE: (f32, f32) = (64.0, 64.0);
-
 pub const BLOCK_LARGE_SPRITE: &str = "base64/metalCenterSticker-64.png";
-pub const _BLOCK_SCALE: f32 = 1.0;
 pub const BLOCK_LARGE_SPRITE_OFFSET: f32 = BLOCK_LARGE_SPRITE_SIZE.0 / 2.0;
+
+pub const BLOCK_SUPPORT_SPRITE_SIZE: (f32, f32) = (64.0, 64.0);
+pub const BLOCK_SUPPORT_SPRITE: &str = "base64/beamBoltsHoles-64.png";
+pub const BLOCK_SUPPORT_SPRITE_OFFSET: f32 = BLOCK_LARGE_SPRITE_SIZE.0 / 2.0;
 
 pub const BLOCK_MEDIUM_SPRITE_SIZE: (f32, f32) = (16.0, 16.0);
 pub const BLOCK_MEDIUM_SIZE: f32 = 16.;
@@ -14,16 +16,19 @@ pub const _BLOCK_MEDIUM_SCALE: f32 = 1.0;
 pub const _BLOCK_MEDIUM_SPRITE_OFFSET: f32 = BLOCK_LARGE_SPRITE_SIZE.0 / 2.0;
 
 pub const GRID_WIDTH: f32 = 64.;
+const NUMBER_COLS: usize = 16;
 
 pub fn block_large_setup_system(
     mut commands: Commands,
     game_textures: Res<GameTextures>,
     block_map: Res<BlockMap>,
 ) {
-    for (x, y) in block_map.0.iter() {
+    let blocks = get_blocks_from_map('#', block_map);
+
+    for (x, y) in blocks {
         let (screen_x, screen_y) = (
-            *x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2. ,
-            *y as f32 * GRID_WIDTH - SCREEN_HEIGHT / 2. + BLOCK_LARGE_SPRITE_OFFSET, 
+            x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2.,
+            y as f32 * GRID_WIDTH - SCREEN_HEIGHT / 2. + BLOCK_LARGE_SPRITE_OFFSET,
         );
         commands
             .spawn_bundle(SpriteBundle {
@@ -41,51 +46,58 @@ pub fn block_large_setup_system(
     }
 }
 
-pub fn _block_medium_setup_system(mut commands: Commands, game_textures: Res<GameTextures>) {
-    let (mut x, mut y) = (
-        SCREEN_WIDTH_OFFSET - _BLOCK_MEDIUM_SPRITE_OFFSET,
-        -SCREEN_HEIGHT_OFFSET + _BLOCK_MEDIUM_SPRITE_OFFSET,
-    );
-    (x, y) = (x, y + 55.0);
-
-    commands
-        .spawn_bundle(SpriteBundle {
-            texture: game_textures.block_medium.clone(),
-            transform: Transform {
-                scale: Vec3::new(_BLOCK_MEDIUM_SCALE, _BLOCK_MEDIUM_SCALE, 1.),
-                translation: Vec3::new(x, y, 2.0),
-                ..Default::default()
-            },
-            ..Default::default()
+fn get_blocks_from_map(block_selector: char, block_map: Res<BlockMap>) -> Vec<(usize, usize)> {
+    block_map
+        .0
+        .iter()
+        .enumerate()
+        .filter(|(i, x)| char::from(**x) == block_selector)
+        .map(|(n, _)| {
+            let x: usize = n % (NUMBER_COLS);
+            let y: usize = n / (NUMBER_COLS);
+            (x, y)
         })
-        .insert(SpriteSize::from(BLOCK_MEDIUM_SPRITE_SIZE))
-        .insert(Block)
-        .insert(BlockHeat::new())
-        .insert(BlockSize::Medium(10));
+        .collect::<Vec<(usize, usize)>>()
+}
+
+pub fn block_support_setup_system(
+    mut commands: Commands,
+    game_textures: Res<GameTextures>,
+    block_map: Res<BlockMap>,
+) {
+    let blocks = get_blocks_from_map('S', block_map);
+
+    for (x, y) in blocks {
+        let (screen_x, screen_y) = (
+            x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2.,
+            y as f32 * GRID_WIDTH - SCREEN_HEIGHT / 2. + BLOCK_LARGE_SPRITE_OFFSET,
+        );
+        commands
+            .spawn_bundle(SpriteBundle {
+                texture: game_textures.block_support.clone(),
+                transform: Transform {
+                    translation: Vec3::new(screen_x, screen_y, 2.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .insert(SpriteSize::from(BLOCK_SUPPORT_SPRITE_SIZE))
+            .insert(Block)
+            .insert(BlockHeat::new())
+            .insert(BlockSize::Large(64));
+    }
 }
 
 pub fn block_map_setup_system(mut commands: Commands) {
-    const NUMBER_COLS: usize = 16;
-
     let map_input = File::open("assets/map.txt").expect("no Map file found.");
 
     let mut reader = BufReader::new(map_input);
     let mut file_buffer: Vec<u8> = Vec::new();
 
     if reader.read_to_end(&mut file_buffer).is_ok() {
-        let blocks_to_spawn = file_buffer
-        .iter()
-        .enumerate()
-        .filter(|(_, x)| char::from(**x) == '#')
-        .map(|(n, _)| {
-            let x: usize = n % (NUMBER_COLS + 1); // guess the \n is a countable char too
-            let y: usize = n / (NUMBER_COLS + 1); // so add it in
-            (x, y)
-        })
-        .collect::<Vec<(usize, usize)>>();
-        dbg!(&blocks_to_spawn);
+        file_buffer.retain(|x| char::from(*x) != '\n');
 
-        commands.insert_resource(BlockMap(blocks_to_spawn));
+        commands.insert_resource(BlockMap(file_buffer));
     }
 }
 

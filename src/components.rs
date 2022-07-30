@@ -19,6 +19,7 @@ pub struct GameTextures {
     pub actor: Handle<Image>,
     pub block_large: Handle<Image>,
     pub block_medium: Handle<Image>,
+    pub block_support: Handle<Image>,
     // pub laser: Handle<Image>,
 }
 
@@ -75,6 +76,6 @@ pub enum BlockSize {
 pub struct RawMap(pub Vec<u8>);
 
 #[derive(Component)]
-pub struct BlockMap(pub Vec<(usize, usize)>);
+pub struct BlockMap(pub Vec<u8>);
 
 pub struct DespawnedList(pub HashSet<Entity>);

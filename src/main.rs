@@ -24,7 +24,7 @@ const SCREEN_HEIGHT_OFFSET: f32 = SCREEN_HEIGHT / 2.0;
 const SCREEN_WIDTH_OFFSET: f32 = SCREEN_WIDTH / 2.0;
 
 const LASER_SPRITE: &str = "base64/laserGreenHorizontal-64.png";
-const _LASER_SPRITE_SIZE: (f32, f32) = (64.0, 64.0); 
+const _LASER_SPRITE_SIZE: (f32, f32) = (64.0, 64.0);
 const LASER_SCALE: f32 = 1.0;
 
 const EXPLOSION_LENGTH: usize = 6;
@@ -54,7 +54,7 @@ fn main() {
             SystemSet::on_enter(GameState::GameSetup)
                 .with_system(actor_setup_system)
                 .with_system(block_large_setup_system)
-                // .with_system(block_medium_setup_system)
+                .with_system(block_support_setup_system)
                 .with_system(game_run_system),
         )
         .add_system_set(
@@ -128,6 +128,7 @@ fn asset_setup_system(
         actor: asset_server.load(ACTOR_SPRITE),
         block_large: asset_server.load(BLOCK_LARGE_SPRITE),
         block_medium: asset_server.load(BLOCK_MEDIUM_SPRITE),
+        block_support: asset_server.load(BLOCK_SUPPORT_SPRITE),
         // laser: asset_server.load(LASER_SPRITE),
         actor_animation_sprite: texture_atlas_handle,
         explosion_animation_sprite: explosion_atlas_handle,
@@ -261,12 +262,8 @@ fn block_falling_system(
 
         for (collision_transform, collision_block) in collision_query.iter() {
             let collision_block_size = match collision_block {
-                BlockSize::Large(size) => {
-                    Vec2::new(*size as f32, *size as f32)
-                }
-                BlockSize::Medium(size) => {
-                    Vec2::new(*size as f32, *size as f32)
-                }
+                BlockSize::Large(size) => Vec2::new(*size as f32, *size as f32),
+                BlockSize::Medium(size) => Vec2::new(*size as f32, *size as f32),
                 _ => Vec2::new(1.0, 1.0),
             };
 
@@ -275,7 +272,9 @@ fn block_falling_system(
                 falling_block_size,
                 collision_transform.translation,
                 collision_block_size,
-            ).is_some() {
+            )
+            .is_some()
+            {
                 commands.entity(falling_entity).remove::<BlockFalling>();
 
                 collision = true;
