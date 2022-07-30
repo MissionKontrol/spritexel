@@ -1,66 +1,51 @@
 use crate::*;
 use bevy::prelude::*;
 
-pub const BLOCK_SPRITE_SIZE: (f32, f32) = (70.0, 70.0);
+pub const BLOCK_LARGE_SPRITE_SIZE: (f32, f32) = (64.0, 64.0);
 
-pub const BLOCK_SPRITE: &str = "metalCenter.png";
+pub const BLOCK_LARGE_SPRITE: &str = "base64/metalCenterSticker-64.png";
 pub const _BLOCK_SCALE: f32 = 1.0;
-pub const BLOCK_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
+pub const BLOCK_LARGE_SPRITE_OFFSET: f32 = BLOCK_LARGE_SPRITE_SIZE.0 / 2.0;
 
-pub const BLOCK_MEDIUM_SPRITE_SIZE: (f32, f32) = (10.0, 10.0);
-pub const BLOCK_MEDIUM_SIZE: f32 = 10.;
-pub const BLOCK_MEDIUM_SPRITE: &str = "metalSmallCenterSticker.png";
-pub const BLOCK_MEDIUM_SCALE: f32 = 1.0;
-pub const BLOCK_MEDIUM_SPRITE_OFFSET: f32 = BLOCK_SPRITE_SIZE.0 / 2.0;
+pub const BLOCK_MEDIUM_SPRITE_SIZE: (f32, f32) = (16.0, 16.0);
+pub const BLOCK_MEDIUM_SIZE: f32 = 16.;
+pub const BLOCK_MEDIUM_SPRITE: &str = "base64/metalCenterWarning-16.png";
+pub const _BLOCK_MEDIUM_SCALE: f32 = 1.0;
+pub const _BLOCK_MEDIUM_SPRITE_OFFSET: f32 = BLOCK_LARGE_SPRITE_SIZE.0 / 2.0;
 
-pub const GRID_WIDTH: f32 = 100.;
+pub const GRID_WIDTH: f32 = 64.;
 
 pub fn block_large_setup_system(
     mut commands: Commands,
     game_textures: Res<GameTextures>,
-    raw_map: Res<RawMap>,
+    block_map: Res<BlockMap>,
 ) {
-    const NUMBER_COLS: usize = 10;
-
-    let blocks_to_spawn = raw_map
-        .0
-        .iter()
-        .enumerate()
-        .filter(|(_, x)| char::from(**x) == '#')
-        .map(|(n, _)| {
-            let x: usize = n % (NUMBER_COLS + 1); // guess the \n is a countable char too
-            let y: usize = n / (NUMBER_COLS + 1); // so add it in
-            (x, y)
-        })
-        .collect::<Vec<(usize, usize)>>();
-
-    let initial_y_position = -(SCREEN_HEIGHT / 2.0) + BLOCK_SPRITE_OFFSET; //-465. align bottom
-    for (x, y) in blocks_to_spawn.iter() {
+    let initial_y_position = -(SCREEN_HEIGHT / 2.0) + BLOCK_LARGE_SPRITE_OFFSET; // align bottom
+    for (x, y) in block_map.0.iter() {
         let (screen_x, screen_y) = (
-            *x as f32 * 100. - SCREEN_WIDTH / 2. + (GRID_WIDTH - BLOCK_SPRITE_OFFSET),
-            initial_y_position + (BLOCK_SPRITE_SIZE.1 * *y as f32), //465, 395, 325
+            *x as f32 * GRID_WIDTH - SCREEN_WIDTH / 2. ,
+            initial_y_position + (BLOCK_LARGE_SPRITE_SIZE.1 * *y as f32), 
         );
         commands
             .spawn_bundle(SpriteBundle {
                 texture: game_textures.block_large.clone(),
                 transform: Transform {
-                    // scale: Vec3::new(1.4285, 1.4285, 1.), // 10/7 - scale to 100px
                     translation: Vec3::new(screen_x, screen_y, 2.0),
                     ..Default::default()
                 },
                 ..Default::default()
             })
-            .insert(SpriteSize::from(BLOCK_SPRITE_SIZE))
+            .insert(SpriteSize::from(BLOCK_LARGE_SPRITE_SIZE))
             .insert(Block)
             .insert(BlockHeat::new())
             .insert(BlockSize::Large(70));
     }
 }
 
-pub fn block_medium_setup_system(mut commands: Commands, game_textures: Res<GameTextures>) {
+pub fn _block_medium_setup_system(mut commands: Commands, game_textures: Res<GameTextures>) {
     let (mut x, mut y) = (
-        SCREEN_WIDTH_OFFSET - BLOCK_MEDIUM_SPRITE_OFFSET,
-        -SCREEN_HEIGHT_OFFSET + BLOCK_MEDIUM_SPRITE_OFFSET,
+        SCREEN_WIDTH_OFFSET - _BLOCK_MEDIUM_SPRITE_OFFSET,
+        -SCREEN_HEIGHT_OFFSET + _BLOCK_MEDIUM_SPRITE_OFFSET,
     );
     (x, y) = (x, y + 55.0);
 
@@ -68,7 +53,7 @@ pub fn block_medium_setup_system(mut commands: Commands, game_textures: Res<Game
         .spawn_bundle(SpriteBundle {
             texture: game_textures.block_medium.clone(),
             transform: Transform {
-                scale: Vec3::new(BLOCK_MEDIUM_SCALE, BLOCK_MEDIUM_SCALE, 1.),
+                scale: Vec3::new(_BLOCK_MEDIUM_SCALE, _BLOCK_MEDIUM_SCALE, 1.),
                 translation: Vec3::new(x, y, 2.0),
                 ..Default::default()
             },
@@ -81,13 +66,27 @@ pub fn block_medium_setup_system(mut commands: Commands, game_textures: Res<Game
 }
 
 pub fn block_map_setup_system(mut commands: Commands) {
-    let map_input = File::open("assets/map.txt").expect("no file or something");
+    const NUMBER_COLS: usize = 16;
+
+    let map_input = File::open("assets/map.txt").expect("no Map file found.");
 
     let mut reader = BufReader::new(map_input);
     let mut file_buffer: Vec<u8> = Vec::new();
 
     if reader.read_to_end(&mut file_buffer).is_ok() {
-        commands.insert_resource(RawMap(file_buffer));
+        let blocks_to_spawn = file_buffer
+        .iter()
+        .enumerate()
+        .filter(|(_, x)| char::from(**x) == '#')
+        .map(|(n, _)| {
+            let x: usize = n % (NUMBER_COLS + 1); // guess the \n is a countable char too
+            let y: usize = n / (NUMBER_COLS + 1); // so add it in
+            (x, y)
+        })
+        .collect::<Vec<(usize, usize)>>();
+        dbg!(&blocks_to_spawn);
+
+        commands.insert_resource(BlockMap(blocks_to_spawn));
     }
 }
 
@@ -100,8 +99,8 @@ pub fn block_decimate_system(
         if let BlockSize::Medium(_) = block_size {
             continue;
         }
-        const MEDIUM_ROW_RATIO: f32 = 7.0; // 7:1 med:large
-        const OFFSET: f32 = 30.;
+        const MEDIUM_ROW_RATIO: f32 = 4.0; // :large
+        const OFFSET: f32 = 24.;
 
         let x = target_block.0.x - OFFSET;
         let y = target_block.0.y - OFFSET;
